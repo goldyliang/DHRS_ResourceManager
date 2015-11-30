@@ -6,6 +6,9 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
 
+import message.GeneralMessage;
+import message.GeneralMessage.PropertyName;
+
 public class SequencedReceiver implements Runnable {
 
 	PacketHandler handler;
@@ -14,6 +17,8 @@ public class SequencedReceiver implements Runnable {
 	InetSocketAddress addrSequencer;
 	
 	int localPort;
+	
+	Object handleLock = new Object();
 	
 	
 	public SequencedReceiver (int port, InetSocketAddress addrSeq, PacketHandler handler) {
@@ -29,8 +34,18 @@ public class SequencedReceiver implements Runnable {
 			@Override
 			public void run() {
 				long seqNum = getSeqNum (header);
-		        String response = handler.handlePacket (seqNum, request);
-		        sendRespond (header, response);
+		        String response;
+		        
+		        // Synchronize handling packet
+		        // with the operation of sendRMControlMsg
+		        //
+		        // so that the handling of RM control message triggered by handlePacket
+		        // shall always happen after sending the current respond 
+		        // This logic is specially needed for testing
+		        synchronized (handleLock) {
+		        	response = handler.handlePacket (seqNum, request);
+			        sendRespond (header, response);
+		        }
 			}
     	}.start();
         
@@ -52,8 +67,35 @@ public class SequencedReceiver implements Runnable {
     	
     }
     
-    public void sendRMControlMsg (String controlMsg) {
+    // send a RM control message (from server=serverID)
+    // information is in ctrlMsg, which the Sequencer shall extract and take action
+    // this method shall NOT be invoked within handlePacket, otherwise there will be deadlock
+    public void sendRMControlMsg (int serverID, String ctrlMsg) {
     	
+    	 // Synchronize handling packet
+        // with the operation of sendRMControlMsg
+        //
+        // so that the handling of RM control message triggered by handlePacket
+        // shall always happen after sending the current respond 
+        // This logic is specially needed for testing
+        synchronized (handleLock) {
+
+	    	// The required information is in ctrlMsg
+	    	// The header doesn't matter
+	    	String header = "SEQ:0\tFEAddr:0-0\tType:RMCTRL\tSERVERID:" + 
+	    				serverID;
+	    	String msg = header + "\n" + ctrlMsg;
+	    	byte[] buf = msg.getBytes();
+	    	
+	    	try {
+				DatagramPacket p = new DatagramPacket(buf, buf.length, addrSequencer);
+				
+				socketLocal.send(p);
+				
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+        }
     }
 
 

@@ -22,6 +22,20 @@ public class ServerGordon implements HotelServerApp {
 	
 	int myServerID = -1;
 	
+	static Process nameServerProcess;
+	
+	static {
+		// run this once when the class loads
+		try {
+			nameServerProcess = Runtime.getRuntime().exec("orbd -ORBInitialPort 1050");
+			
+			Thread.sleep (1000); // wait for ordb service ready
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+		} 
+	}
+			
+	
 	@Override
 	public ErrorCode reserveRoom(
 			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate, SimpleDate checkOutDate,
@@ -71,7 +85,6 @@ public class ServerGordon implements HotelServerApp {
 		return null;
 	}
 	
-	private Process nameServerProcess;
 	private Process[] serverProcesses = new Process[3]; // process of the three servers
 
 	// wait until process has output "pattern"
@@ -93,6 +106,23 @@ public class ServerGordon implements HotelServerApp {
 		}
 	}
 	
+	private static String getLaunchCmd (String configFile, int serverID) {
+		String hotelName = configFile.substring(configFile.lastIndexOf(".")+1);
+		String title = hotelName + "-Replication-" + serverID;
+		
+		/*return "xterm -T aaa -e java -classpath bin/ HotelServer.HotelServer " 
+						+ configFile + " " + serverID;*/
+		
+		return "xterm -T " + title + " -e java -classpath bin/ HotelServer.HotelServer " 
+				+ configFile + " " + serverID;
+	}
+	
+	private static final String LAUNCH_CMD1 = "xterm -T 'test' -e java -classpath bin/ HotelServer.HotelServer ";
+	private static final String LAUNCH_CMD2 = "xterm -T 'test' -e java -classpath bin/ HotelServer.HotelServer ";
+	private static final String LAUNCH_CMD3 = "xterm -T 'test' -e java -classpath bin/ HotelServer.HotelServer ";
+
+	
+	private static final String LAUNCH_FOLDER = "/home/gordon/workspace/DHRS/DistributedHotelReservation";
 	@Override
 	public boolean launchApp(int serverID) {
 		
@@ -104,26 +134,25 @@ public class ServerGordon implements HotelServerApp {
 			System.out.println("Launching Gordon");
 			Runtime runTime = Runtime.getRuntime();
 			
-			nameServerProcess = runTime.exec("orbd -ORBInitialPort 1050");
 			String curPath = System.getProperty("user.dir");
 			
 			serverProcesses[0] = runTime.exec(
-					"xterm -e java -classpath bin/ HotelServer.HotelServer config.properties.Gordon " + serverID,
+					getLaunchCmd ("config.properties.H1", serverID),
 					null,
-					new File("/home/gordon/workspace/DHRS/DistributedHotelReservation"));
+					new File(LAUNCH_FOLDER));
 			//waitForProcessOutput (serverProcesses[0], "Server running");
 
 			
 			serverProcesses[1] = runTime.exec(
-					"xterm -e java -classpath bin/ HotelServer.HotelServer config.properties.Star " + serverID,
+					getLaunchCmd ("config.properties.H2", serverID),
 					null,
-					new File("/home/gordon/workspace/DHRS/DistributedHotelReservation"));
+					new File(LAUNCH_FOLDER));
 			//waitForProcessOutput (serverProcesses[1], "Server running");
 
 			serverProcesses[2] = runTime.exec(
-					"xterm -e java -classpath bin/ HotelServer.HotelServer config.properties.Motel " + serverID,
+					getLaunchCmd ("config.properties.H3", serverID),
 					null,
-					new File("/home/gordon/workspace/DHRS/DistributedHotelReservation"));
+					new File(LAUNCH_FOLDER));
 			//waitForProcessOutput (serverProcesses[2], "Server running");
 
 			

@@ -15,10 +15,13 @@ import java.util.List;
 import hotelserver.ServerGordon;
 import multicast.SequencedReceiver;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import HotelServerInterface.ErrorAndLogMsg.ErrorCode;
 import rm.ResourceManager;
+import sequencer.SequencerCommon;
 import message.GeneralMessage.PropertyName;
 import message.GeneralMessage;
 import message.GeneralMessage.MessageType;
@@ -42,7 +45,6 @@ public class TestRM {
 				
     		assertTrue( sq.isRunning());
     	}
-		
 	}
 	
 	int cntOfAppRunning_Gordon () throws IOException {
@@ -71,7 +73,7 @@ public class TestRM {
 		try {
 			String [] args = {
 					"hotelserver.ServerGordon", // app class
-					"0",  // server ID
+					"1",  // server ID
 					"2000", // localport
 					"localhost", // FE address
 					"4000"  // FE port
@@ -85,9 +87,8 @@ public class TestRM {
 			
 			assertEquals (3, cntOfAppRunning_Gordon ());
 			
-			Thread th = (activeRm.replaceApp(
-						hotelserver.ServerGordon.class, -1));
-			assertNotNull (th);
+			activeRm.replaceApp(
+						hotelserver.ServerGordon.class, -1);
 			//if (th.isAlive()) 
 			//	th.wait();
 			
@@ -106,59 +107,48 @@ public class TestRM {
 		}
 	}
 	
+	long seqID = 0;
 	
+	UDPEmulator udpSeq;
+	
+	String addrFE = "localhost-3333";
+	
+	InetSocketAddress rmAddr[] = new InetSocketAddress [3];
+	
+	@Before
+	public void init () {
+		try {
+			udpSeq = new UDPEmulator (4000);
+		} catch (SocketException e) {
+			e.printStackTrace();
+		}
+		/*rmAddr[0] = new InetSocketAddress ("localhost", 2000);
+		rmAddr[1] = new InetSocketAddress ("localhost", 2001);
+		rmAddr[2] = new InetSocketAddress ("localhost", 2002);*/
+	}
+	
+	@After
+	public void tearDown () {
+		if (udpSeq!=null)
+			udpSeq.close ();
+		udpSeq = null;
+	}
 	
 	@Test
 	public void testBulkSync () {
 		
-	}
+	}	
 	
-	@Test
-	public void testReservation () throws IOException {
-		
-		String [] args = {
-				"hotelserver.ServerGordon", // app class
-				"0",  // server ID
-				"2000", // localport
-				"localhost", // FE address
-				"4000"  // FE port
-		};
-		
-		// start three replications
-		ResourceManager.main(args);
-		
-		args[1] = "1";
-		args[2] = "2001";
-		ResourceManager.main(args);
-		
-		args[1] = "2";
-		args[2] = "2002";
-		ResourceManager.main(args);
-		
-		// wait for some time
-		try {
-			Thread.sleep(3000);
-		} catch (InterruptedException e) {
-
-		}
-		
-		
-		UDPEmulator udpSeq = new UDPEmulator (4000);
-		
-		InetSocketAddress rmAddr[] = new InetSocketAddress [3];
-		
-		rmAddr[0] = new InetSocketAddress ("localhost", 2000);
-		rmAddr[1] = new InetSocketAddress ("localhost", 2001);
-		rmAddr[2] = new InetSocketAddress ("localhost", 2002);
-		
+	private void verifyReserve (String guest, String hotel, String room, String inDate, String outDate) 
+			throws IOException {
 		String request = 
-				 "SEQ:5\tFEAddr:localhost-3333\n" 
+				 "SEQ:" + seqID + "\tFEAddr:localhost-3333\n" 
 				+ MessageType.RESERVE + "\n"
-				+ PropertyName.GUESTID + ":35555\n"
-				+ PropertyName.HOTEL + ":Gordon\n"
-				+ PropertyName.ROOMTYPE + ":SINGLE\n"
-				+ PropertyName.CHECKINDATE + ":2015/12/5\n"
-				+ PropertyName.CHECKOUTDATE + ":2015/12/20\n";
+				+ PropertyName.GUESTID + ":" + guest +"\n"
+				+ PropertyName.HOTEL + ":" + hotel + "\n"
+				+ PropertyName.ROOMTYPE + ":" + room + "\n"
+				+ PropertyName.CHECKINDATE + ":" + inDate + "\n"
+				+ PropertyName.CHECKOUTDATE + ":" + outDate + "\n";
 		
 		udpSeq.sendPacket(rmAddr[0], request);
 		udpSeq.sendPacket(rmAddr[1], request);
@@ -170,23 +160,262 @@ public class TestRM {
 			
 			assertNotNull (ret);
 			
-			assertEquals (5, SequencedReceiver.getSeqNum(ret));
+			assertEquals (seqID, SequencedReceiver.getSeqNum(ret));
 			assertEquals ("localhost-3333", SequencedReceiver.getFEAddr(ret));
 			
 			GeneralMessage msg = GeneralMessage.decode(SequencedReceiver.getMessageBody(ret));
 			
 			assertEquals ( MessageType.RESPOND, msg.getMessageType() );
-			assertEquals ( ErrorCode.SUCCESS.toString(), msg.getValue(PropertyName.RETCODE));
+			assertEquals ( String.valueOf(seqID), msg.getValue(PropertyName.RESID));
 		}
+	}
+	
+	//@Test
+	public void testReservation () throws IOException {
+				
+		String [] args = {
+				"hotelserver.ServerGordon", // app class
+				"1",  // server ID
+				"2000", // localport
+				"localhost", // FE address
+				"4000"  // FE port
+		};
+		
+		// start three replications
+		ResourceManager.main(args);
+		
+		args[1] = "2";
+		args[2] = "2001";
+		ResourceManager.main(args);
+		
+		args[1] = "3";
+		args[2] = "2002";
+		ResourceManager.main(args);
+		
+		// wait for some time
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+
+		}
+		
+		verifyReserve ("1234","H1","SINGLE","20151205","20151210");
 		
 		List <ResourceManager> tmpList = new ArrayList<ResourceManager> ();
 		tmpList.addAll(ResourceManager.activeRMs);
 		
 		for (ResourceManager rm : tmpList) 
 			assertTrue (rm.stopApp());
-				
+						
 	}
 	
+	private void seqSendRMCtrolMsg (GeneralMessage msg) throws IOException {
+		String request = 
+				 "SEQ:" + seqID + "\tFEAddr:" + addrFE + "\n" 
+				+ msg.encode();
+		
+		int rmCnt = 0;
+		
+		for (int i=0; i<3; i++) 
+			if (rmAddr[i]!=null) {
+				udpSeq.sendPacket(rmAddr[i], request);
+				rmCnt ++;
+			}
+
+
+		for (int i=0; i<rmCnt; i++) {
+			// receive three times
+			String ret = udpSeq.receivePacket();
+			
+			assertNotNull (ret);
+			
+			assertEquals (seqID, SequencedReceiver.getSeqNum(ret));
+			assertEquals (addrFE, SequencedReceiver.getFEAddr(ret));
+			
+			GeneralMessage rsp = GeneralMessage.decode(SequencedReceiver.getMessageBody(ret));
+			
+			assertEquals ( MessageType.RESPOND, rsp.getMessageType() );
+			
+		}
+		
+		seqID ++;
+	}
+	
+	// Sequencer shall receive a control message from server
+	// examine header, and return the body
+	private GeneralMessage seqReceiveCtrlMsg (int fromSrv) throws IOException {
+		String s = udpSeq.receivePacket();
+		assertNotNull (s);
+		assertEquals (0, SequencerCommon.getSeqNum(s));
+		assertEquals ("0-0", SequencerCommon.getFEAddr(s));
+		assertEquals (fromSrv, SequencerCommon.getServerID(s));
+		GeneralMessage rmvSrv = GeneralMessage.decode(SequencerCommon.getMessageBody(s));
+		return rmvSrv;
+
+	}
+	
+	private void runResourceMain (final String[] args) {
+		new Thread () {
+			@Override
+			public void run () {
+				ResourceManager.main(args);
+			}
+		}.start();
+	}
+	
+	@Test
+	public void testAppRestartDueToError () throws IOException, InterruptedException {
+		
+		
+		String [] args = {
+				"hotelserver.ServerGordon", // app class
+				"1",  // server ID
+				"2000", // localport
+				"localhost", // FE address
+				"4000"  // FE port
+		};
+		
+		// start three replications
+		runResourceMain(args);
+		args[1] = "2";
+		args[2] = "2001";
+		runResourceMain(args);
+		
+		args[1] = "3";
+		args[2] = "2002";
+		runResourceMain(args);
+		
+		// wait for some time
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+
+		}
+		
+		verifyServerAdd (1);
+		verifyServerAdd (2);
+		verifyServerAdd (3);
+		
+		// now we reserve one first
+		verifyReserve ("1234","H1","DOUBLE","20151205","20151210");
+		
+		GeneralMessage suspectRpt = new GeneralMessage (MessageType.REPORT_SUSPECTED_RESPOND);
+		suspectRpt.setValue(PropertyName.SERVERID, "1");
+		seqSendRMCtrolMsg (suspectRpt);
+		seqSendRMCtrolMsg (suspectRpt);
+
+		verifyServerRestart (1, 1);
+
+		Thread.sleep(2000);
+		
+		// now we can reserve again
+		verifyReserve ("1234","H3","SINGLE","20151205","20151210");
+		
+		
+		List <ResourceManager> tmpList = new ArrayList<ResourceManager> ();
+		tmpList.addAll(ResourceManager.activeRMs);
+		
+		for (ResourceManager rm : tmpList) 
+			assertTrue (rm.stopApp());
+		
+	}
+	
+	private void verifyServerAdd (int server) throws IOException {
+		// receive add server
+		GeneralMessage addSrv = seqReceiveCtrlMsg (server);
+		assertEquals (MessageType.ADD_SERVER, addSrv.getMessageType());
+		assertEquals (String.valueOf(server), addSrv.getValue(PropertyName.SERVERID));
+		
+		// set the address
+		rmAddr [server] = (InetSocketAddress) udpSeq.getLastReceivePacketAddress();
+		
+		// broadcast back add server
+		seqSendRMCtrolMsg (addSrv);
+	}
+	
+	private void verifyServerRestart (int serverControl, int serverRestart) throws IOException {
+		// receive remove server
+		GeneralMessage rmvSrv = seqReceiveCtrlMsg (serverControl); // suppose to receive the message from controlling server
+		
+		assertEquals (MessageType.RMV_SERVER, rmvSrv.getMessageType());
+		
+		// verify the server to be restart
+		assertEquals (String.valueOf(serverRestart), rmvSrv.getValue(PropertyName.SERVERID));
+		
+		// broadcast back remove server
+		seqSendRMCtrolMsg (rmvSrv);
+		
+		// TODO: reseive pause
+		
+		verifyServerAdd (serverRestart);
+		
+		// receive resume
+		GeneralMessage resume = seqReceiveCtrlMsg (serverControl);
+		assertEquals (MessageType.RESUME, resume.getMessageType());
+		
+		// broadcast back add resume
+		seqSendRMCtrolMsg (resume);
+	}
+	
+	//@Test
+	public void testAppRestartDueToNoRsp () throws IOException, InterruptedException {
+		
+		
+		String [] args = {
+				"hotelserver.ServerGordon", // app class
+				"1",  // server ID
+				"2000", // localport
+				"localhost", // FE address
+				"4000"  // FE port
+		};
+		
+		// start three replications
+		ResourceManager.main(args);
+		args[1] = "2";
+		args[2] = "2001";
+		ResourceManager.main(args);
+		
+		args[1] = "3";
+		args[2] = "2002";
+		ResourceManager.main(args);
+		
+		// wait for some time
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+
+		}
+		
+		verifyServerAdd (1);
+		verifyServerAdd (2);
+		verifyServerAdd (3);
+		
+		// now we reserve one first
+		verifyReserve ("1234","H1","DOUBLE","20151205","20151210");
+		
+		GeneralMessage suspectRpt = new GeneralMessage (MessageType.REPORT_NO_RESPOND);
+		suspectRpt.setValue(PropertyName.SERVERID, "1");
+		seqSendRMCtrolMsg (suspectRpt);
+		seqSendRMCtrolMsg (suspectRpt);
+
+		// verify the restart process, the controlling server shall the one before
+		// the failure one, and restart server is the failure one
+		verifyServerRestart (3, 1);
+		
+
+		Thread.sleep(2000);
+		
+		// now we can reserve again
+		verifyReserve ("1234","H3","SINGLE","20151205","20151210");
+		
+		
+		List <ResourceManager> tmpList = new ArrayList<ResourceManager> ();
+		tmpList.addAll(ResourceManager.activeRMs);
+		
+		for (ResourceManager rm : tmpList) 
+			assertTrue (rm.stopApp());
+		
+	}
 	
 
 }

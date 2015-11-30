@@ -3,8 +3,6 @@ package test;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 
@@ -19,7 +17,7 @@ public class UDPEmulator {
 		 
 	}
 	
-	public String receivePacket () throws IOException {
+	public synchronized String receivePacket () throws IOException {
 		byte[] buffer = new byte[2000];
 		
 		DatagramPacket p = new DatagramPacket (buffer, buffer.length);
@@ -32,7 +30,7 @@ public class UDPEmulator {
 	}
 	
 	// send back to last received address
-	public void sendPacket (String s) throws IOException {
+	public synchronized void sendPacket (String s) throws IOException {
 		byte [] buffer = s.getBytes();
 		
 		DatagramPacket p = new DatagramPacket (buffer,buffer.length);
@@ -43,7 +41,7 @@ public class UDPEmulator {
 	}
 	
 	// send to specific  address
-	public void sendPacket (SocketAddress addr, String s) throws IOException {
+	public synchronized void sendPacket (SocketAddress addr, String s) throws IOException {
 		byte [] buffer = s.getBytes();
 		
 		DatagramPacket p = new DatagramPacket (buffer,buffer.length);
@@ -51,5 +49,16 @@ public class UDPEmulator {
 		p.setSocketAddress(addr);
 		
 		socket.send(p);
+	}
+	
+	public synchronized void close () {
+		if (socket!=null) {
+			socket.close();
+			socket = null;
+		}
+	}
+	
+	public synchronized SocketAddress getLastReceivePacketAddress () {
+		return dest;
 	}
 }

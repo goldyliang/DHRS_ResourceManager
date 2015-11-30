@@ -84,6 +84,9 @@ public interface HotelServerApp {
 		}
 		
 	}
+	
+	
+	
 		
 	// Note: it is now not conformed with RMI interface to return long by parameter
 	// this only works for CORBA
