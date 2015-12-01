@@ -51,34 +51,43 @@ public class ServerGordon extends ServerBase {
 	}
 
 	@Override
-	public ErrorCode cancelRoom(String guestID, RoomType roomType, SimpleDate checkInDate, SimpleDate checkOutDate)
+	public ErrorCode cancelRoom(
+			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate, SimpleDate checkOutDate)
 			throws RemoteException {
-		// TODO Auto-generated method stub
-		return null;
+		ErrorAndLogMsg m = clientProxy.cancelHotel(
+				guestID, hotelName, roomType, checkInDate, checkOutDate);
+		
+		System.out.print("CANCEL INFO:");
+		m.print(System.out);
+		System.out.println("");
+		
+		return m.errorCode();
 	}
 
 	@Override
-	public List<Availability> checkAvailability(String guestID, RoomType roomType, SimpleDate checkInDate,
+	public List<Availability> checkAvailability(
+			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate,
 			SimpleDate checkOutDate) throws RemoteException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public ErrorCode transferRoom(String guestID, int reservationID, RoomType roomType, SimpleDate checkInDate,
+	public ErrorCode transferRoom(
+			String guestID, int reservationID, String hotelName, RoomType roomType, SimpleDate checkInDate,
 			SimpleDate checkOutDate, String targetHotel, int newResID) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public Record[] getServiceReport(SimpleDate serviceDate) throws RemoteException {
+	public Record[] getServiceReport(String hotelName, SimpleDate serviceDate) throws RemoteException {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public Record[] getStatusReport(SimpleDate date) throws RemoteException {
+	public Record[] getStatusReport(String hotelName, SimpleDate date) throws RemoteException {
 		// TODO Auto-generated method stub
 		return null;
 	}

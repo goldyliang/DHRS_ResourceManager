@@ -95,23 +95,23 @@ public interface HotelServerApp {
 			SimpleDate checkInDate, SimpleDate checkOutDate, int resID) throws RemoteException;
 	
 	public ErrorCode cancelRoom (
-			String guestID, RoomType roomType, 
+			String guestID, String hotelName, RoomType roomType, 
 			SimpleDate checkInDate, SimpleDate checkOutDate) throws RemoteException;
 	
 	public List<Availability> checkAvailability (
-			String guestID, RoomType roomType,
+			String guestID, String hotelName, RoomType roomType,
 			SimpleDate checkInDate, SimpleDate checkOutDate) throws RemoteException;
 	
 	public ErrorCode transferRoom (
 	        String guestID, int reservationID,
-	        RoomType roomType,
+	        String hotelName, RoomType roomType,
 	        SimpleDate checkInDate, SimpleDate checkOutDate,
 	        String targetHotel,
 	        int newResID);
 	
-	public Record[] getServiceReport (SimpleDate serviceDate) throws RemoteException;
+	public Record[] getServiceReport (String hotelName, SimpleDate serviceDate) throws RemoteException;
 	
-	public Record[] getStatusReport (SimpleDate date) throws RemoteException;
+	public Record[] getStatusReport (String hotelName, SimpleDate date) throws RemoteException;
 	
 	public boolean launchApp(int serverID);
 	
