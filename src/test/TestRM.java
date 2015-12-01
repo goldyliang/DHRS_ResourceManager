@@ -243,14 +243,19 @@ public class TestRM {
 	
 	// Sequencer shall receive a control message from server
 	// examine header, and return the body
+	// if fromSrv = 0, from any
 	private GeneralMessage seqReceiveCtrlMsg (int fromSrv) throws IOException {
 		String s = udpSeq.receivePacket();
 		assertNotNull (s);
 		assertEquals (0, SequencerCommon.getSeqNum(s));
 		assertEquals ("0-0", SequencerCommon.getFEAddr(s));
-		assertEquals (fromSrv, SequencerCommon.getServerID(s));
-		GeneralMessage rmvSrv = GeneralMessage.decode(SequencerCommon.getMessageBody(s));
-		return rmvSrv;
+		
+		if (fromSrv > 0)
+			assertEquals (fromSrv, SequencerCommon.getServerID(s));
+		
+		GeneralMessage ctrMsg = GeneralMessage.decode(SequencerCommon.getMessageBody(s));
+		
+		return ctrMsg;
 
 	}
 	
@@ -263,11 +268,11 @@ public class TestRM {
 		}.start();
 	}
 	
-	@Test
+	//@Test
 	public void testAppRestartDueToError () throws IOException, InterruptedException {
 		
 		
-		String [] args = {
+		String [] args1 = {
 				"hotelserver.ServerGordon", // app class
 				"1",  // server ID
 				"2000", // localport
@@ -276,14 +281,31 @@ public class TestRM {
 		};
 		
 		// start three replications
-		runResourceMain(args);
-		args[1] = "2";
-		args[2] = "2001";
-		runResourceMain(args);
+		runResourceMain(args1);
+		verifyServerAdd (1);
+
 		
-		args[1] = "3";
-		args[2] = "2002";
-		runResourceMain(args);
+		String [] args2 = {
+				"hotelserver.ServerGordon", // app class
+				"2",  // server ID
+				"2001", // localport
+				"localhost", // FE address
+				"4000"  // FE port
+		};
+		runResourceMain(args2);
+		verifyServerAdd (2);
+
+		
+		String [] args3 = {
+				"hotelserver.ServerGordon", // app class
+				"3",  // server ID
+				"2002", // localport
+				"localhost", // FE address
+				"4000"  // FE port
+		};
+		runResourceMain(args3);
+		verifyServerAdd (3);
+
 		
 		// wait for some time
 		try {
@@ -291,10 +313,7 @@ public class TestRM {
 		} catch (InterruptedException e) {
 
 		}
-		
-		verifyServerAdd (1);
-		verifyServerAdd (2);
-		verifyServerAdd (3);
+
 		
 		// now we reserve one first
 		verifyReserve ("1234","H1","DOUBLE","20151205","20151210");
@@ -322,12 +341,16 @@ public class TestRM {
 	
 	private void verifyServerAdd (int server) throws IOException {
 		// receive add server
-		GeneralMessage addSrv = seqReceiveCtrlMsg (server);
+		GeneralMessage addSrv = seqReceiveCtrlMsg (0); // from any server
 		assertEquals (MessageType.ADD_SERVER, addSrv.getMessageType());
-		assertEquals (String.valueOf(server), addSrv.getValue(PropertyName.SERVERID));
+		
+		int addServer = Integer.valueOf(addSrv.getValue(PropertyName.SERVERID));
+		
+		if (server > 0) 
+			assertEquals (server, addServer);
 		
 		// set the address
-		rmAddr [server] = (InetSocketAddress) udpSeq.getLastReceivePacketAddress();
+		rmAddr [addServer-1] = (InetSocketAddress) udpSeq.getLastReceivePacketAddress();
 		
 		// broadcast back add server
 		seqSendRMCtrolMsg (addSrv);
@@ -357,11 +380,11 @@ public class TestRM {
 		seqSendRMCtrolMsg (resume);
 	}
 	
-	//@Test
+	@Test
 	public void testAppRestartDueToNoRsp () throws IOException, InterruptedException {
 		
 		
-		String [] args = {
+		String [] args1 = {
 				"hotelserver.ServerGordon", // app class
 				"1",  // server ID
 				"2000", // localport
@@ -370,14 +393,30 @@ public class TestRM {
 		};
 		
 		// start three replications
-		ResourceManager.main(args);
-		args[1] = "2";
-		args[2] = "2001";
-		ResourceManager.main(args);
+		runResourceMain(args1);
+		verifyServerAdd (1);
+
 		
-		args[1] = "3";
-		args[2] = "2002";
-		ResourceManager.main(args);
+		String [] args2 = {
+				"hotelserver.ServerGordon", // app class
+				"2",  // server ID
+				"2001", // localport
+				"localhost", // FE address
+				"4000"  // FE port
+		};
+		runResourceMain(args2);
+		verifyServerAdd (2);
+
+		
+		String [] args3 = {
+				"hotelserver.ServerGordon", // app class
+				"3",  // server ID
+				"2002", // localport
+				"localhost", // FE address
+				"4000"  // FE port
+		};
+		runResourceMain(args3);
+		verifyServerAdd (3);
 		
 		// wait for some time
 		try {
@@ -386,9 +425,6 @@ public class TestRM {
 
 		}
 		
-		verifyServerAdd (1);
-		verifyServerAdd (2);
-		verifyServerAdd (3);
 		
 		// now we reserve one first
 		verifyReserve ("1234","H1","DOUBLE","20151205","20151210");

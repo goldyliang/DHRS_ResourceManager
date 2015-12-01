@@ -99,10 +99,30 @@ public abstract class SequencerCommon {
 		int i = message.indexOf(tag);
 		if (i<0) return 0;
 		
-		int j = message.indexOf("\n",i+1);
+		int j = message.indexOf("\t",i+1);
 		if (j<0) return 0;
 		
 		return Integer.valueOf(message.substring(i + tag.length(),j));
+	}
+	
+	public static InetSocketAddress getServerSocketAddress (String message) {
+		String tag = "SERVERADDR:";
+		
+		int i = message.indexOf(tag);
+		if (i<0) return null;
+		
+		int j = message.indexOf("\t",i+1);
+		
+		String addr = message.substring(i + tag.length(), j);
+		
+		int k = addr.indexOf("-");
+		
+		InetSocketAddress sockAddr = new InetSocketAddress (
+				addr.substring(0, k),
+				Integer.valueOf(addr.substring(k+1)) );
+				
+		return sockAddr;
+			
 	}
 	
 }

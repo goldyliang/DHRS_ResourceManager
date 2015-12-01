@@ -82,7 +82,7 @@ public class SequencedReceiver implements Runnable {
 
 	    	// The required information is in ctrlMsg
 	    	// The header doesn't matter
-	    	String header = "SEQ:0\tFEAddr:0-0\tType:RMCTRL\tSERVERID:" + 
+	    	String header = "SEQ:0\tFEAddr:0-0\tTYPE:RMCTRL\tSERVERID:" + 
 	    				serverID;
 	    	String msg = header + "\n" + ctrlMsg;
 	    	byte[] buf = msg.getBytes();

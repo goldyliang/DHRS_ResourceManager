@@ -1,5 +1,6 @@
 package rm;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
@@ -27,7 +28,7 @@ public class ResourceManager implements PacketHandler {
 	
 	private static final int TOLERANT_SUSPECTED_RESPOND = 2;
 
-	private static final int TOLERANT_NO_RESPOND = 0;
+	private static final int TOLERANT_NO_RESPOND = 2;
 
 	HotelServerApp activeApp;
 	
@@ -288,7 +289,8 @@ public class ResourceManager implements PacketHandler {
 		return true;
 	}
 	
-	private final String RM_CMD_LINE = "rm";
+	private final String RM_CMD_LINE = "xterm -T NewResourceManager -e java -classpath bin/ rm.ResourceManager";
+	private final String RM_CMD_FOLDER = "/home/gordon/workspace/DHRS_RM";
 
 	private void launchNewRM (
 			Class <? extends HotelServerApp> appClass,
@@ -314,7 +316,7 @@ public class ResourceManager implements PacketHandler {
 					+ " 0 " // let system allocate new port
 					+ addrSequencer.getHostString() 
 					+ " " + addrSequencer.getPort();
-			runTime.exec(RM_CMD_LINE + arguments);
+			runTime.exec(RM_CMD_LINE + arguments, null, new File (RM_CMD_FOLDER) );
 			
 			System.out.println("New RM Launched.");
 						
@@ -491,7 +493,6 @@ public class ResourceManager implements PacketHandler {
 		
 		rm.startReceiver();
 
-		
 		rm.launchApp(appClass, rm.getNextServerID());
 		
 		
