@@ -16,11 +16,9 @@ import HotelServerInterface.IHotelServer.RoomType;
 import miscutil.SimpleDate;
 
 
-public class ServerGordon implements HotelServerApp {
+public class ServerGordon extends ServerBase {
 
 	HotelClient clientProxy;
-	
-	int myServerID = -1;
 	
 	static Process nameServerProcess;
 	
@@ -116,19 +114,14 @@ public class ServerGordon implements HotelServerApp {
 		return "xterm -T " + title + " -e java -classpath bin/ HotelServer.HotelServer " 
 				+ configFile + " " + serverID;
 	}
-	
-	private static final String LAUNCH_CMD1 = "xterm -T 'test' -e java -classpath bin/ HotelServer.HotelServer ";
-	private static final String LAUNCH_CMD2 = "xterm -T 'test' -e java -classpath bin/ HotelServer.HotelServer ";
-	private static final String LAUNCH_CMD3 = "xterm -T 'test' -e java -classpath bin/ HotelServer.HotelServer ";
 
 	
 	private static final String LAUNCH_FOLDER = "/home/gordon/workspace/DHRS/DistributedHotelReservation";
 	@Override
 	public boolean launchApp(int serverID) {
 		
-		myServerID = serverID;
-
-		killApp();		
+		if (!super.launchApp(serverID)) 
+			return false;
 		
 		try {
 			System.out.println("Launching Gordon");
@@ -160,11 +153,7 @@ public class ServerGordon implements HotelServerApp {
 			
 			//Give some time for the servers to register to name service
 			//Thread.sleep(5000);
-			
-			//Set proper direction of streaming logs and errors
-			ErrorAndLogMsg.addStream( MsgType.ERR, System.err);
-			ErrorAndLogMsg.addStream(MsgType.WARN, System.out);
-			ErrorAndLogMsg.addStream(MsgType.INFO, System.out);			
+				
 			
 			String regHost = "localhost";
 			int regPort = 1050;
@@ -184,16 +173,6 @@ public class ServerGordon implements HotelServerApp {
 
 	}
 	
-	@Override
-	public boolean restartApp(int serverID) {
-
-		myServerID = serverID;
-		
-		killApp();
-		
-		return launchApp(serverID);
-	}
-
 	@Override
 	public boolean killApp() {
 		

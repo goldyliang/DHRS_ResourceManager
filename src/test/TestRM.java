@@ -279,11 +279,30 @@ public class TestRM {
 	}
 	
 	@Test
-	public void testAppRestartDueToError () throws IOException, InterruptedException {
+	public void testAppRestartDueToError_AllYuchen () throws IOException, InterruptedException {
+		
+		testAppRestartDueToError (
+				"hotelserver.ServerYuchen",
+				"hotelserver.ServerYuchen",
+				"hotelserver.ServerYuchen");
+	}
+	
+	//@Test
+	public void testAppRestartDueToError_AllGordon () throws IOException, InterruptedException {
+		testAppRestartDueToError (
+				"hotelserver.ServerGordon",
+				"hotelserver.ServerGordon",
+				"hotelserver.ServerGordon");
+	}
+	
+	public void testAppRestartDueToError (
+			String class1,
+			String class2,
+			String class3) throws IOException, InterruptedException {
 		
 		
 		String [] args1 = {
-				"hotelserver.ServerGordon", // app class
+				class1, // app class
 				"1",  // server ID
 				"2000", // localport
 				"localhost", // FE address
@@ -296,7 +315,7 @@ public class TestRM {
 
 		
 		String [] args2 = {
-				"hotelserver.ServerGordon", // app class
+				class2, // app class
 				"2",  // server ID
 				"2001", // localport
 				"localhost", // FE address
@@ -307,7 +326,7 @@ public class TestRM {
 
 		
 		String [] args3 = {
-				"hotelserver.ServerGordon", // app class
+				class3, // app class
 				"3",  // server ID
 				"2002", // localport
 				"localhost", // FE address
@@ -406,12 +425,30 @@ public class TestRM {
 		//System.out.println("Verified broadcasted RESUME");
 	}
 	
-	@Test
-	public void testAppRestartDueToNoRsp () throws IOException, InterruptedException {
+	//@Test
+	public void testAppRestartDueToNoRsp_AllGordon() throws IOException, InterruptedException {
+		testAppRestartDueToNoRsp (
+				"hotelserver.ServerGordon",
+				"hotelserver.ServerGordon",
+				"hotelserver.ServerGordon");
+	}
+	
+	//@Test
+	public void testAppRestartDueToNoRsp_AllYuchen() throws IOException, InterruptedException {
+		testAppRestartDueToNoRsp (
+				"hotelserver.ServerYuchen",
+				"hotelserver.ServerYuchen",
+				"hotelserver.ServerYuchen");
+	}
+	
+	public void testAppRestartDueToNoRsp (
+			String class1,
+			String class2,
+			String class3) throws IOException, InterruptedException {
 		
 		
 		String [] args1 = {
-				"hotelserver.ServerGordon", // app class
+				class1, // app class
 				"1",  // server ID
 				"2000", // localport
 				"localhost", // FE address
@@ -424,7 +461,7 @@ public class TestRM {
 
 		
 		String [] args2 = {
-				"hotelserver.ServerGordon", // app class
+				class2, // app class
 				"2",  // server ID
 				"2001", // localport
 				"localhost", // FE address
@@ -435,7 +472,7 @@ public class TestRM {
 
 		
 		String [] args3 = {
-				"hotelserver.ServerGordon", // app class
+				class3, // app class
 				"3",  // server ID
 				"2002", // localport
 				"localhost", // FE address

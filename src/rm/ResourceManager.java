@@ -75,12 +75,15 @@ public class ResourceManager implements PacketHandler {
 	public boolean launchApp (
 			Class <? extends HotelServerApp> appClass,
 			int bulkSyncFrom) {
+		
+		boolean success = false;
+		
 		try {
 			
 			activeApp = appClass.newInstance();
 			
 			if (activeApp!=null)
-				activeApp.launchApp(myID);
+				success = activeApp.launchApp(myID);
 			else
 				return false;
 			
@@ -89,6 +92,8 @@ public class ResourceManager implements PacketHandler {
 			e.printStackTrace();
 			return false;
 		}
+		
+		if (!success) return false;
 		
 		activeRMs.add(this);
 		
@@ -100,9 +105,7 @@ public class ResourceManager implements PacketHandler {
 				new GeneralMessage (MessageType.ADD_SERVER);
 		msgAddServer.setValue(PropertyName.SERVERID, String.valueOf(myID));
 		
-		initiateRMControlMessage (msgAddServer);
-		
-		return true;
+		return initiateRMControlMessage (msgAddServer);
 	}
 	
 	
@@ -266,9 +269,12 @@ public class ResourceManager implements PacketHandler {
 			
 			activeApp.killApp();
 			
-			launchApp (appClass, bulkSyncFrom);
+			boolean success = launchApp (appClass, bulkSyncFrom);
 								
-			
+			if (success)
+				System.out.println("Server started successfully: " + appClass);
+			else
+				System.out.println("Server start failure: " + appClass);
 			
 			// TODO: remove this to the sync control server
 			try {
