@@ -13,9 +13,9 @@ import DHRS_FE.function;
 import DHRS_FE.functionHelper;
 import HotelServerInterface.ErrorAndLogMsg;
 import HotelServerInterface.ErrorAndLogMsg.ErrorCode;
+import HotelServerInterface.IHotelServer.Availability;
+import HotelServerInterface.IHotelServer.Record;
 import HotelServerInterface.IHotelServer.RoomType;
-import hotelserver.HotelServerApp.Availability;
-import hotelserver.HotelServerApp.Record;
 import miscutil.SimpleDate;
 
 

@@ -3,6 +3,7 @@ package test;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketException;
 
@@ -60,5 +61,15 @@ public class UDPEmulator {
 	
 	public synchronized SocketAddress getLastReceivePacketAddress () {
 		return dest;
+	}
+	
+	public static void main (String[] args) throws IOException {
+		UDPEmulator em = new UDPEmulator (5555);
+		
+		while (true)
+		em.sendPacket( new InetSocketAddress (
+				"132.205.46.179", 52020), "TEST TEST");
+		
+		
 	}
 }

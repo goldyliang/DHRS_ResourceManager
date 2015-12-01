@@ -5,12 +5,14 @@ import java.rmi.RemoteException;
 import java.util.List;
 
 import HotelServerInterface.ErrorAndLogMsg.ErrorCode;
+import HotelServerInterface.IHotelServer.Availability;
+import HotelServerInterface.IHotelServer.Record;
 import HotelServerInterface.IHotelServer.RoomType;
 import miscutil.SimpleDate;
 
 public interface HotelServerApp {
 	
-	@SuppressWarnings("serial")
+	/*	@SuppressWarnings("serial")
 	public static class Availability implements Serializable {
 		public String hotelName;
 		public int availCount;
@@ -85,7 +87,7 @@ public interface HotelServerApp {
 		
 	}
 	
-	
+	*/
 	
 		
 	// Note: it is now not conformed with RMI interface to return long by parameter

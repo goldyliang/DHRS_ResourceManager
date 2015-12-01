@@ -6,12 +6,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.List;
 
 import Client.HotelClient;
 import HotelServerInterface.ErrorAndLogMsg;
 import HotelServerInterface.ErrorAndLogMsg.ErrorCode;
 import HotelServerInterface.ErrorAndLogMsg.MsgType;
+import HotelServerInterface.IHotelServer.Availability;
+import HotelServerInterface.IHotelServer.Record;
 import HotelServerInterface.IHotelServer.RoomType;
 import miscutil.SimpleDate;
 
@@ -68,8 +71,30 @@ public class ServerGordon extends ServerBase {
 	public List<Availability> checkAvailability(
 			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate,
 			SimpleDate checkOutDate) throws RemoteException {
-		// TODO Auto-generated method stub
-		return null;
+		
+		Record rec = new Record (
+				0,
+				guestID,
+				hotelName,
+				roomType,
+				checkInDate,
+				checkOutDate,
+				0);
+		
+		List <Availability> avails = new ArrayList <Availability> ();
+		
+		ErrorAndLogMsg m = clientProxy.checkAvailability(rec, avails);
+		
+		if (m==null || !m.anyError()) {
+			System.out.println("Availablity:");
+			for (Availability avail : avails) 
+				System.out.println(avail);
+			return avails;
+		} else {
+			m.printMsg();
+			return null;
+		}
+
 	}
 
 	@Override
