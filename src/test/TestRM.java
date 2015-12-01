@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import hotelserver.ServerGordon;
-import multicast.SequencedReceiver;
+import sequencer.SequencedReceiver;
 
 import org.junit.After;
 import org.junit.Before;
@@ -161,10 +161,10 @@ public class TestRM {
 			
 			assertNotNull (ret);
 			
-			assertEquals (seqID, SequencedReceiver.getSeqNum(ret));
-			assertEquals ("localhost-3333", SequencedReceiver.getFEAddr(ret));
+			assertEquals (seqID, SequencerCommon.getSeqNum(ret));
+			//assertEquals ("localhost-3333", SequencedReceiver.getFEAddr(ret));
 			
-			GeneralMessage msg = GeneralMessage.decode(SequencedReceiver.getMessageBody(ret));
+			GeneralMessage msg = GeneralMessage.decode(SequencerCommon.getMessageBody(ret));
 			
 			assertEquals ( MessageType.RESPOND, msg.getMessageType() );
 			assertEquals ( String.valueOf(seqID), msg.getValue(PropertyName.RESID));
@@ -230,10 +230,10 @@ public class TestRM {
 			
 			assertNotNull (ret);
 			
-			assertEquals (seqID, SequencedReceiver.getSeqNum(ret));
-			assertEquals (addrFE, SequencedReceiver.getFEAddr(ret));
+			assertEquals (seqID, SequencerCommon.getSeqNum(ret));
+			//assertEquals (addrFE, SequencedReceiver.getFEAddr(ret));
 			
-			GeneralMessage rsp = GeneralMessage.decode(SequencedReceiver.getMessageBody(ret));
+			GeneralMessage rsp = GeneralMessage.decode(SequencerCommon.getMessageBody(ret));
 			
 			assertEquals ( MessageType.RESPOND, rsp.getMessageType() );
 			

@@ -21,8 +21,8 @@ import message.GeneralMessage;
 import message.GeneralMessage.MessageType;
 import message.GeneralMessage.PropertyName;
 import miscutil.SimpleDate;
-import multicast.PacketHandler;
-import multicast.SequencedReceiver;
+import sequencer.PacketHandler;
+import sequencer.SequencedReceiver;
 
 public class ResourceManager implements PacketHandler {
 	
@@ -154,13 +154,13 @@ public class ResourceManager implements PacketHandler {
 	// Blocking FIFO queue for all message to be handled service restart
 	// messages, during 
 	// replaceApp process, bulk sync, etc
-	ArrayBlockingQueue <GeneralMessage> queueSrvRestartMsg = 
+	ArrayBlockingQueue <GeneralMessage> queueRMCtrlMsg = 
 			new ArrayBlockingQueue <GeneralMessage> (10);
 	
 	// Handle RM control message sent from Sequencer
 	// (RMV_SERVER, ADD_SERVER, PAUSE, RESUME)
 	// Return the ack needed to send back
-	// Push the message in queueSrvRestartMsg
+	// Push the message in queueRMCtrlMsg
 	private GeneralMessage handleRMControlMsg (GeneralMessage rmRequest) {
 		
 		MessageType type = rmRequest.getMessageType();
@@ -171,11 +171,14 @@ public class ResourceManager implements PacketHandler {
 			//type != MessageType.RESUME)
 			return null;
 		
+		// Print out what ever RM Control message received
+		System.out.println ("Received multi-casted RM control message: \n" + rmRequest.encode());
+		
 		// Build a ack
 		GeneralMessage rsp = new GeneralMessage (MessageType.RESPOND);
 		
 		// Push the request message to queue
-		if (!queueSrvRestartMsg.offer (rmRequest))
+		if (!queueRMCtrlMsg.offer (rmRequest))
 			throw new RuntimeException ("Queue push error : " + type);
 		else
 			return rsp;
@@ -205,7 +208,7 @@ public class ResourceManager implements PacketHandler {
 			
 				// Wait for a message coming in the queue
 				GeneralMessage requst = //queueSrvRestartMsg.take();
-						queueSrvRestartMsg.poll(TIMEOUT, TimeUnit.SECONDS);
+						queueRMCtrlMsg.poll(TIMEOUT, TimeUnit.SECONDS);
 				
 				if (requst == null) {
 					ErrorAndLogMsg.GeneralErr(ErrorCode.TIME_OUT, 
@@ -252,7 +255,7 @@ public class ResourceManager implements PacketHandler {
 			// Clear the message queue first
 		
 			
-			queueSrvRestartMsg.clear();
+			queueRMCtrlMsg.clear();
 		
 			GeneralMessage msgRmvServer = 
 					new GeneralMessage (MessageType.RMV_SERVER);
@@ -302,7 +305,7 @@ public class ResourceManager implements PacketHandler {
 			public void run () {
 				
 				// Send remove server
-				queueSrvRestartMsg.clear();
+				queueRMCtrlMsg.clear();
 				
 				GeneralMessage msgRmvServer = 
 						new GeneralMessage (MessageType.RMV_SERVER);
