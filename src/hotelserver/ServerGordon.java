@@ -141,16 +141,18 @@ public class ServerGordon extends ServerBase {
 	private static String getLaunchCmd (String configFile, int serverID) {
 		String hotelName = configFile.substring(configFile.lastIndexOf(".")+1);
 		String title = hotelName + "-Replication-" + serverID;
-		
-		/*return "xterm -T aaa -e java -classpath bin/ HotelServer.HotelServer " 
-						+ configFile + " " + serverID;*/
-		
-		return "xterm -T " + title + " -e java -classpath bin/ HotelServer.HotelServer " 
+
+		String javaCmd = " java -classpath bin/ HotelServer.HotelServer " 
 				+ configFile + " " + serverID;
+		
+		if (isWindows())
+			return "cmd /C " + javaCmd;
+		else
+			return "xterm -T " + title + " -e " + javaCmd;
 	}
 
 	
-	private static final String LAUNCH_FOLDER = "/home/gordon/workspace/DHRS/DistributedHotelReservation";
+	private static final String LAUNCH_FOLDER = System.getProperty("user.dir") + "/home/gordon/workspace/DHRS/DistributedHotelReservation";
 	@Override
 	public boolean launchApp(int serverID) {
 		
@@ -217,10 +219,18 @@ public class ServerGordon extends ServerBase {
 			
 			Process proc;
 			
-			if (myServerID>=0)
-				proc = rt.exec(curPath + "/killgordon.sh " + myServerID);
-			else
-				proc = rt.exec(curPath + "/killgordon.sh");
+			if (!isWindows()) {
+			
+				if (myServerID>=0)
+					proc = rt.exec(curPath + "/killgordon.sh " + myServerID);
+				else
+					proc = rt.exec(curPath + "/killgordon.sh");
+			} else {
+				if (myServerID>=0)
+					proc = rt.exec("cmd /C " + curPath + "\\killgordon.bat " + myServerID);
+				else
+					proc = rt.exec("cmd /C " + curPath + "\\killgordon.bat");
+			}
 			
 			proc.waitFor();
 		} catch (IOException e) {

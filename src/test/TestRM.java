@@ -278,7 +278,7 @@ public class TestRM {
 		}.start();
 	}
 	
-	@Test
+	//@Test
 	public void testAppRestartDueToError_AllYuchen () throws IOException, InterruptedException {
 		
 		testAppRestartDueToError (
@@ -287,7 +287,7 @@ public class TestRM {
 				"hotelserver.ServerYuchen");
 	}
 	
-	//@Test
+	@Test
 	public void testAppRestartDueToError_AllGordon () throws IOException, InterruptedException {
 		testAppRestartDueToError (
 				"hotelserver.ServerGordon",

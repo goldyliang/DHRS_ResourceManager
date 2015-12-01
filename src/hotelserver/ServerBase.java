@@ -36,4 +36,9 @@ public abstract class ServerBase implements HotelServerApp {
 		return launchApp(serverID);
 	}
 
+	public static boolean isWindows () {
+		String OS = System.getProperty("os.name");
+		
+		return (OS.indexOf("Windows") >= 0);
+	}
 }
