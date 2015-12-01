@@ -93,19 +93,41 @@ public abstract class SequencerCommon {
 		return message.substring(i+ tag.length(),j);
 	}
 	
-	public static int getServerID (String message) {
+	/*
+	public static int getHeaderServerID (String message) {
 		String tag = "SERVERID:";
 
 		int i = message.indexOf(tag);
-		if (i<0) return 0;
+		if (i<0) return -1;
 		
 		int j = message.indexOf("\t",i+1);
-		if (j<0) return 0;
+		if (j<0) return -1;
 		
 		return Integer.valueOf(message.substring(i + tag.length(),j));
+	} */
+	
+	public static String getBodyMessageType (String message) {
+		String content = message.substring(message.indexOf("\n")+1);
+
+		int i = content.indexOf("\n");
+		String type = content.substring(0, i);
+		return type;
 	}
 	
-	public static InetSocketAddress getServerSocketAddress (String message) {
+	public static int getBodyServerID (String message) {
+		String content = message.substring(message.indexOf("\n")+1);
+		
+		String tag = "SERVERID:";
+		int i = content.indexOf(tag);
+		if (i<0) return -1;
+		
+		int j = content.indexOf("\n",i+1);
+		if (j<0) return -1;
+		
+		return Integer.valueOf(content.substring(i + tag.length(),j));
+	}
+	
+/*	public static InetSocketAddress getServerSocketAddress (String message) {
 		String tag = "SERVERADDR:";
 		
 		int i = message.indexOf(tag);
@@ -123,6 +145,6 @@ public abstract class SequencerCommon {
 				
 		return sockAddr;
 			
-	}
+	} */
 	
 }

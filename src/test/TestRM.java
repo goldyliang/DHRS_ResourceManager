@@ -113,7 +113,8 @@ public class TestRM {
 	
 	String addrFE = "localhost-3333";
 	
-	InetSocketAddress rmAddr[] = new InetSocketAddress [3];
+	// index from 1 to 3
+	InetSocketAddress rmAddr[] = new InetSocketAddress [4];
 	
 	@Before
 	public void init () {
@@ -150,11 +151,11 @@ public class TestRM {
 				+ PropertyName.CHECKINDATE + ":" + inDate + "\n"
 				+ PropertyName.CHECKOUTDATE + ":" + outDate + "\n";
 		
-		udpSeq.sendPacket(rmAddr[0], request);
 		udpSeq.sendPacket(rmAddr[1], request);
 		udpSeq.sendPacket(rmAddr[2], request);
+		udpSeq.sendPacket(rmAddr[3], request);
 
-		for (int i=0; i<3; i++) {
+		for (int i=1; i<=3; i++) {
 			// receive three times
 			String ret = udpSeq.receivePacket();
 			
@@ -216,7 +217,7 @@ public class TestRM {
 		
 		int rmCnt = 0;
 		
-		for (int i=0; i<3; i++) 
+		for (int i=1; i<=3; i++) 
 			if (rmAddr[i]!=null) {
 				udpSeq.sendPacket(rmAddr[i], request);
 				rmCnt ++;
@@ -247,11 +248,20 @@ public class TestRM {
 	private GeneralMessage seqReceiveCtrlMsg (int fromSrv) throws IOException {
 		String s = udpSeq.receivePacket();
 		assertNotNull (s);
-		assertEquals (0, SequencerCommon.getSeqNum(s));
-		assertEquals ("0-0", SequencerCommon.getFEAddr(s));
+		//assertEquals (0, SequencerCommon.getSeqNum(s));
+		//assertEquals ("0-0", SequencerCommon.getFEAddr(s));
+		assertEquals ("RMCTRL", SequencerCommon.getMessageType(s));
 		
-		if (fromSrv > 0)
-			assertEquals (fromSrv, SequencerCommon.getServerID(s));
+		if (fromSrv > 0) {
+			
+			InetSocketAddress addr = (InetSocketAddress) udpSeq.getLastReceivePacketAddress();
+			
+			assertEquals (rmAddr[fromSrv], addr);
+			//if (fromSrv != SequencerCommon.getHeaderServerID(s) )
+			//	fromSrv = fromSrv;
+
+			//assertEquals (fromSrv, SequencerCommon.getHeaderServerID(s));
+		}
 		
 		GeneralMessage ctrMsg = GeneralMessage.decode(SequencerCommon.getMessageBody(s));
 		
@@ -268,7 +278,7 @@ public class TestRM {
 		}.start();
 	}
 	
-	//@Test
+	@Test
 	public void testAppRestartDueToError () throws IOException, InterruptedException {
 		
 		
@@ -346,14 +356,20 @@ public class TestRM {
 		
 		int addServer = Integer.valueOf(addSrv.getValue(PropertyName.SERVERID));
 		
+		System.out.println ("Verified receiving ADD_SERVER");
+
 		if (server > 0) 
 			assertEquals (server, addServer);
 		
+		
 		// set the address
-		rmAddr [addServer-1] = (InetSocketAddress) udpSeq.getLastReceivePacketAddress();
+		rmAddr [addServer]= (InetSocketAddress) udpSeq.getLastReceivePacketAddress();
 		
 		// broadcast back add server
 		seqSendRMCtrolMsg (addSrv);
+		
+		System.out.println ("Verified broacsted ADD_SERVER");
+
 	}
 	
 	private void verifyServerRestart (int serverControl, int serverRestart) throws IOException {
@@ -365,19 +381,29 @@ public class TestRM {
 		// verify the server to be restart
 		assertEquals (String.valueOf(serverRestart), rmvSrv.getValue(PropertyName.SERVERID));
 		
+		System.out.println ("Verified receiving RMV_SERVER");
+		
 		// broadcast back remove server
 		seqSendRMCtrolMsg (rmvSrv);
+		
+		System.out.println ("Verified broadcasted RMV_SERVER");
+
 		
 		// TODO: reseive pause
 		
 		verifyServerAdd (serverRestart);
+
 		
 		// receive resume
-		GeneralMessage resume = seqReceiveCtrlMsg (serverControl);
-		assertEquals (MessageType.RESUME, resume.getMessageType());
+		//GeneralMessage resume = seqReceiveCtrlMsg (serverControl);
+		//assertEquals (MessageType.RESUME, resume.getMessageType());
+		
+		//System.out.println ("Verified receiving RESUME");
 		
 		// broadcast back add resume
-		seqSendRMCtrolMsg (resume);
+		//seqSendRMCtrolMsg (resume);
+		
+		//System.out.println("Verified broadcasted RESUME");
 	}
 	
 	@Test
@@ -438,12 +464,10 @@ public class TestRM {
 		// the failure one, and restart server is the failure one
 		verifyServerRestart (3, 1);
 		
-
 		Thread.sleep(2000);
 		
 		// now we can reserve again
 		verifyReserve ("1234","H3","SINGLE","20151205","20151210");
-		
 		
 		List <ResourceManager> tmpList = new ArrayList<ResourceManager> ();
 		tmpList.addAll(ResourceManager.activeRMs);

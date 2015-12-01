@@ -133,7 +133,7 @@ public class ResourceManager implements PacketHandler {
 		case ADD_SERVER:
 		case RMV_SERVER:
 		case PAUSE:
-		case RESUME:
+		//case RESUME:
 			return handleRMControlMsg (msgRequest).encode();
 		}
 		
@@ -167,8 +167,8 @@ public class ResourceManager implements PacketHandler {
 		
 		if (type != MessageType.RMV_SERVER &&
 			type != MessageType.ADD_SERVER &&
-			type != MessageType.PAUSE &&
-			type != MessageType.RESUME)
+			type != MessageType.PAUSE )
+			//type != MessageType.RESUME)
 			return null;
 		
 		// Build a ack
@@ -275,9 +275,9 @@ public class ResourceManager implements PacketHandler {
 				e.printStackTrace();
 			}
 			
-			GeneralMessage msgResume = 
+/*			GeneralMessage msgResume = 
 					new GeneralMessage (MessageType.RESUME);
-			initiateRMControlMessage (msgResume);
+			initiateRMControlMessage (msgResume); */
 		}
 	}
 	
@@ -293,36 +293,61 @@ public class ResourceManager implements PacketHandler {
 	private final String RM_CMD_FOLDER = "/home/gordon/workspace/DHRS_RM";
 
 	private void launchNewRM (
-			Class <? extends HotelServerApp> appClass,
-			int restartServerID) {
+			final Class <? extends HotelServerApp> appClass,
+			final int restartServerID) {
 		// TODO
 		
-		try {
-			System.out.println("Launching new RM");
-			Runtime runTime = Runtime.getRuntime();
-			
-			/*Example of arguments:
-			 * String [] args = {
-					"hotelserver.ServerGordon", // app class
-					"1",  // server ID
-					"2000", // localport
-					"localhost", // sequencer address
-					"4000",  // sequencer port
-					//optional sync from which server
-			};*/
-			
-			String arguments = " " + appClass.getName() 
-					+ " " + restartServerID 
-					+ " 0 " // let system allocate new port
-					+ addrSequencer.getHostString() 
-					+ " " + addrSequencer.getPort();
-			runTime.exec(RM_CMD_LINE + arguments, null, new File (RM_CMD_FOLDER) );
-			
-			System.out.println("New RM Launched.");
-						
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		new Thread () {
+			@Override
+			public void run () {
+				
+				// Send remove server
+				queueSrvRestartMsg.clear();
+				
+				GeneralMessage msgRmvServer = 
+						new GeneralMessage (MessageType.RMV_SERVER);
+				
+				msgRmvServer.setValue(PropertyName.SERVERID, String.valueOf(restartServerID));
+				
+				initiateRMControlMessage (msgRmvServer);
+				
+				
+				// TODO: remove... just for testing
+				try {
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					
+				}
+				
+				try {
+					System.out.println("Launching new RM");
+					Runtime runTime = Runtime.getRuntime();
+					
+					/*Example of arguments:
+					 * String [] args = {
+							"hotelserver.ServerGordon", // app class
+							"1",  // server ID
+							"2000", // localport
+							"localhost", // sequencer address
+							"4000",  // sequencer port
+							//optional sync from which server
+					};*/
+					
+					String arguments = " " + appClass.getName() 
+							+ " " + restartServerID 
+							+ " 0 " // let system allocate new port
+							+ addrSequencer.getHostString() 
+							+ " " + addrSequencer.getPort();
+					runTime.exec(RM_CMD_LINE + arguments, null, new File (RM_CMD_FOLDER) );
+					
+					System.out.println("New RM Launched.");
+								
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}.start();
+		
 
 	}
 	
