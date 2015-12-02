@@ -25,5 +25,25 @@
 			<type>2</type>
 			<location>/home/gordon/workspace/DHRS/DistributedHotelReservation/src</location>
 		</link>
+		<link>
+			<name>srcFE</name>
+			<type>2</type>
+			<location>/home/gordon/DHRS-Replica/DHRS-Project/src</location>
+		</link>
+		<link>
+			<name>srcGordonApp</name>
+			<type>2</type>
+			<location>/home/gordon/DHRS-Replica/DistributedHotelReservation/src</location>
+		</link>
+		<link>
+			<name>srcSequencer</name>
+			<type>2</type>
+			<location>/home/gordon/DHRS-Replica/DHRS_Sequencer/src</location>
+		</link>
+		<link>
+			<name>srcYuchenApp</name>
+			<type>2</type>
+			<location>/home/gordon/DHRS-Replica/CORBA_DHRS/src</location>
+		</link>
 	</linkedResources>
 </projectDescription>

@@ -222,18 +222,22 @@ public class ServerGordon extends ServerBase {
 			
 			if (!isWindows()) {
 			
-				String pattern = "^(?!.*xterm.*).*java.*HotelServer.*";
+/*				String pattern = "'^(?!.*xterm.*).*java.*HotelServer.*";
 				if (myServerID > 0)
 					pattern = pattern + myServerID;
 				
-				pattern = pattern + "$";
+				pattern = pattern + "$'";
 				
 				String cmd = "ps -ef | grep -P " + pattern + " | tr -s ' ' | cut -f2 -d' ' | xargs kill -9";
+*/
+				String cmd = curPath + "/killgordon.sh";
+				if (myServerID > 0)
+					cmd = cmd + " " + myServerID;
 				
 				proc = rt.exec(cmd);
 				
 			} else {
-				if (myServerID>=0)
+				if (myServerID > 0)
 					proc = rt.exec("taskkill /FI \"WINDOWTITLE eq Replica#" + myServerID + "*\"");
 				else
 					proc = rt.exec("taskkill /FI \"WINDOWTITLE eq Replica#*");
