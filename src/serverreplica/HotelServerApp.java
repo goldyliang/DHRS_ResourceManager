@@ -1,4 +1,4 @@
-package hotelserver;
+package serverreplica;
 
 import java.io.Serializable;
 import java.rmi.RemoteException;

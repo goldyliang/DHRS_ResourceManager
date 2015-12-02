@@ -15,14 +15,15 @@ import HotelServerInterface.ErrorAndLogMsg;
 import HotelServerInterface.ErrorAndLogMsg.ErrorCode;
 import HotelServerInterface.ErrorAndLogMsg.MsgType;
 import HotelServerInterface.IHotelServer.RoomType;
-import hotelserver.HotelServerApp;
-import hotelserver.ServerGordon;
 import message.GeneralMessage;
 import message.GeneralMessage.MessageType;
 import message.GeneralMessage.PropertyName;
 import miscutil.SimpleDate;
 import sequencer.PacketHandler;
 import sequencer.SequencedReceiver;
+import serverreplica.HotelServerApp;
+import serverreplica.ServerBase;
+import serverreplica.ServerGordon;
 
 public class ResourceManager implements PacketHandler {
 	
@@ -298,13 +299,21 @@ public class ResourceManager implements PacketHandler {
 		return true;
 	}
 	
-	private final String RM_CMD_LINE = "xterm -T NewResourceManager -e java -classpath bin/ rm.ResourceManager";
-	private final String RM_CMD_FOLDER = "/home/gordon/workspace/DHRS_RM";
+	
 
 	private void launchNewRM (
 			final Class <? extends HotelServerApp> appClass,
 			final int restartServerID) {
-		// TODO
+		
+		final String rmCmdLine;
+		
+		if (ServerBase.isWindows())
+			rmCmdLine = "cmd.exe /K start \"NewResourceManager\" java -classpath bin/ rm.ResourceManager ";
+		else 
+			rmCmdLine = "xterm -T NewResourceManager -e java -classpath bin/ rm.ResourceManager ";
+		
+		final String rmCmdFolder = System.getProperty("user.dir");
+
 		
 		new Thread () {
 			@Override
@@ -347,7 +356,10 @@ public class ResourceManager implements PacketHandler {
 							+ " 0 " // let system allocate new port
 							+ addrSequencer.getHostString() 
 							+ " " + addrSequencer.getPort();
-					runTime.exec(RM_CMD_LINE + arguments, null, new File (RM_CMD_FOLDER) );
+					
+					String cmd = rmCmdLine + arguments;
+					
+					runTime.exec(cmd, null, new File (rmCmdFolder) );
 					
 					System.out.println("New RM Launched.");
 								

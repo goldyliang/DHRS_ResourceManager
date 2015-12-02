@@ -1,4 +1,4 @@
-package hotelserver;
+package serverreplica;
 
 import HotelServerInterface.ErrorAndLogMsg;
 import HotelServerInterface.ErrorAndLogMsg.MsgType;

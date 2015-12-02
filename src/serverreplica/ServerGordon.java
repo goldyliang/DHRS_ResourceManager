@@ -1,4 +1,4 @@
-package hotelserver;
+package serverreplica;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -146,13 +146,14 @@ public class ServerGordon extends ServerBase {
 				+ configFile + " " + serverID;
 		
 		if (isWindows())
-			return "cmd /C " + javaCmd;
+			return "cmd.exe /K start \"Replica#" + serverID + "-" + hotelName + "\"" + javaCmd; // put replication ID ahead in order to use taskkill /FI "Replica#n*"
 		else
 			return "xterm -T " + title + " -e " + javaCmd;
 	}
 
 	
-	private static final String LAUNCH_FOLDER = System.getProperty("user.dir") + "/home/gordon/workspace/DHRS/DistributedHotelReservation";
+	private static final String LAUNCH_FOLDER = System.getProperty("user.dir") + "/../DistributedHotelReservation";
+	
 	@Override
 	public boolean launchApp(int serverID) {
 		
@@ -221,15 +222,21 @@ public class ServerGordon extends ServerBase {
 			
 			if (!isWindows()) {
 			
-				if (myServerID>=0)
-					proc = rt.exec(curPath + "/killgordon.sh " + myServerID);
-				else
-					proc = rt.exec(curPath + "/killgordon.sh");
+				String pattern = "^(?!.*xterm.*).*java.*HotelServer.*";
+				if (myServerID > 0)
+					pattern = pattern + myServerID;
+				
+				pattern = pattern + "$";
+				
+				String cmd = "ps -ef | grep -P " + pattern + " | tr -s ' ' | cut -f2 -d' ' | xargs kill -9";
+				
+				proc = rt.exec(cmd);
+				
 			} else {
 				if (myServerID>=0)
-					proc = rt.exec("cmd /C " + curPath + "\\killgordon.bat " + myServerID);
+					proc = rt.exec("taskkill /FI \"WINDOWTITLE eq Replica#" + myServerID + "*\"");
 				else
-					proc = rt.exec("cmd /C " + curPath + "\\killgordon.bat");
+					proc = rt.exec("taskkill /FI \"WINDOWTITLE eq Replica#*");
 			}
 			
 			proc.waitFor();

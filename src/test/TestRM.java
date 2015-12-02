@@ -12,7 +12,6 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.List;
 
-import hotelserver.ServerGordon;
 import sequencer.SequencedReceiver;
 
 import org.junit.After;
@@ -20,9 +19,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import HotelServerInterface.ErrorAndLogMsg.ErrorCode;
-import rm.ResourceManager;
 import sequencer.SequencerCommon;
+import serverreplica.ServerGordon;
 import message.GeneralMessage.PropertyName;
+import rm.ResourceManager;
 import message.GeneralMessage;
 import message.GeneralMessage.MessageType;
 
@@ -88,7 +88,7 @@ public class TestRM {
 			assertEquals (3, cntOfAppRunning_Gordon ());
 			
 			activeRm.replaceApp(
-						hotelserver.ServerGordon.class, -1);
+						serverreplica.ServerGordon.class, -1);
 			//if (th.isAlive()) 
 			//	th.wait();
 			
@@ -282,17 +282,17 @@ public class TestRM {
 	public void testAppRestartDueToError_AllYuchen () throws IOException, InterruptedException {
 		
 		testAppRestartDueToError (
-				"hotelserver.ServerYuchen",
-				"hotelserver.ServerYuchen",
-				"hotelserver.ServerYuchen");
+				"serverreplica.ServerYuchen",
+				"serverreplica.ServerYuchen",
+				"serverreplica.ServerYuchen");
 	}
 	
 	@Test
 	public void testAppRestartDueToError_AllGordon () throws IOException, InterruptedException {
 		testAppRestartDueToError (
-				"hotelserver.ServerGordon",
-				"hotelserver.ServerGordon",
-				"hotelserver.ServerGordon");
+				"serverreplica.ServerGordon",
+				"serverreplica.ServerGordon",
+				"serverreplica.ServerGordon");
 	}
 	
 	public void testAppRestartDueToError (
@@ -425,20 +425,20 @@ public class TestRM {
 		//System.out.println("Verified broadcasted RESUME");
 	}
 	
-	//@Test
+	@Test
 	public void testAppRestartDueToNoRsp_AllGordon() throws IOException, InterruptedException {
 		testAppRestartDueToNoRsp (
-				"hotelserver.ServerGordon",
-				"hotelserver.ServerGordon",
-				"hotelserver.ServerGordon");
+				"serverreplica.ServerGordon",
+				"serverreplica.ServerGordon",
+				"serverreplica.ServerGordon");
 	}
 	
 	//@Test
 	public void testAppRestartDueToNoRsp_AllYuchen() throws IOException, InterruptedException {
 		testAppRestartDueToNoRsp (
-				"hotelserver.ServerYuchen",
-				"hotelserver.ServerYuchen",
-				"hotelserver.ServerYuchen");
+				"serverreplica.ServerYuchen",
+				"serverreplica.ServerYuchen",
+				"serverreplica.ServerYuchen");
 	}
 	
 	public void testAppRestartDueToNoRsp (
