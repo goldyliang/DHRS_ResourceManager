@@ -17,6 +17,7 @@ import HotelServerInterface.IHotelServer.Availability;
 import HotelServerInterface.IHotelServer.Record;
 import HotelServerInterface.IHotelServer.RoomType;
 import miscutil.SimpleDate;
+import serverreplica.HotelServerApp.ReportSummary;
 
 
 public class ServerYuchen extends ServerBase {
@@ -42,7 +43,7 @@ public class ServerYuchen extends ServerBase {
 	@Override
 	public ErrorCode reserveRoom(
 			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate, SimpleDate checkOutDate,
-			int resID) throws RemoteException {
+			long resID) {
 
 		int iGuestID = Integer.valueOf(guestID);
 		String sType = convertRoomType (roomType);
@@ -63,6 +64,7 @@ public class ServerYuchen extends ServerBase {
 			return ErrorCode.HOTEL_NOT_FOUND;
 		}
 				
+		// TODO: shall pass the resID in
 		String result = hotel.reserveRoom(iGuestID, hotelName, sType, iCheckIn, iCheckOut);
 		
 		System.out.println("Server return results:" + result);
@@ -75,36 +77,39 @@ public class ServerYuchen extends ServerBase {
 
 	@Override
 	public ErrorCode cancelRoom(
-			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate, SimpleDate checkOutDate)
-			throws RemoteException {
+			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate, SimpleDate checkOutDate) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public List<Availability> checkAvailability(
-			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate,
-			SimpleDate checkOutDate) throws RemoteException {
+	public ErrorCode checkAvailability(
+			String guestID, String hotelName, RoomType roomType,
+			SimpleDate checkInDate, SimpleDate checkOutDate,
+			ReportSummary summary) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public ErrorCode transferRoom(
-			String guestID, int reservationID, String hotelName, RoomType roomType, SimpleDate checkInDate,
-			SimpleDate checkOutDate, String targetHotel, int newResID) {
+			String guestID, long reservationID, String hotelName, 
+			String targetHotel, long newResID) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public Record[] getServiceReport(String hotelName, SimpleDate serviceDate) throws RemoteException {
-		// TODO Auto-generated method stub
+	public ErrorCode getServiceReport (
+			String hotelName, SimpleDate serviceDate,
+			ReportSummary summary) {		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public Record[] getStatusReport(String hotelName, SimpleDate date) throws RemoteException {
+	public ErrorCode getStatusReport (
+			String hotelName, SimpleDate date,
+			ReportSummary summary)  {
 		// TODO Auto-generated method stub
 		return null;
 	}

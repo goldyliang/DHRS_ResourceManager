@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import Client.HotelClient;
@@ -17,6 +18,7 @@ import HotelServerInterface.IHotelServer.Availability;
 import HotelServerInterface.IHotelServer.Record;
 import HotelServerInterface.IHotelServer.RoomType;
 import miscutil.SimpleDate;
+import serverreplica.HotelServerApp.ReportSummary;
 
 
 public class ServerGordon extends ServerBase {
@@ -40,11 +42,12 @@ public class ServerGordon extends ServerBase {
 	@Override
 	public ErrorCode reserveRoom(
 			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate, SimpleDate checkOutDate,
-			int resID) throws RemoteException {
+			long resID)  {
 
+		//TODO: potential error for long -> int;
 		ErrorAndLogMsg m = clientProxy.reserveHotel(
 				guestID, hotelName, roomType, checkInDate, checkOutDate, 
-				resID);
+				(int)resID);
 		
 		System.out.print("RESERVE INFO:");
 		m.print(System.out);
@@ -56,7 +59,7 @@ public class ServerGordon extends ServerBase {
 	@Override
 	public ErrorCode cancelRoom(
 			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate, SimpleDate checkOutDate)
-			throws RemoteException {
+			 {
 		ErrorAndLogMsg m = clientProxy.cancelHotel(
 				guestID, hotelName, roomType, checkInDate, checkOutDate);
 		
@@ -68,9 +71,10 @@ public class ServerGordon extends ServerBase {
 	}
 
 	@Override
-	public List<Availability> checkAvailability(
-			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate,
-			SimpleDate checkOutDate) throws RemoteException {
+	public ErrorCode checkAvailability (
+			String guestID, String hotelName, RoomType roomType,
+			SimpleDate checkInDate, SimpleDate checkOutDate,
+			ReportSummary summary) {
 		
 		Record rec = new Record (
 				0,
@@ -86,35 +90,136 @@ public class ServerGordon extends ServerBase {
 		ErrorAndLogMsg m = clientProxy.checkAvailability(rec, avails);
 		
 		if (m==null || !m.anyError()) {
-			System.out.println("Availablity:");
-			for (Availability avail : avails) 
-				System.out.println(avail);
-			return avails;
+			StringBuilder sum = new StringBuilder();
+			sum.append("Availablity:\n");
+			
+			summary.totalRoomCnt = 0;
+			
+			for (Availability avail : avails) {
+				sum.append(avail.toString());
+				sum.append("\n");
+				summary.totalRoomCnt += avail.availCount;
+			}
+			
+			summary.summary = sum.toString();
+			
+			System.out.println ("Got availability:");
+			System.out.println (summary);
+			
+			return ErrorCode.SUCCESS;
 		} else {
 			m.printMsg();
-			return null;
+			return m.errorCode();
 		}
 
 	}
 
 	@Override
 	public ErrorCode transferRoom(
-			String guestID, int reservationID, String hotelName, RoomType roomType, SimpleDate checkInDate,
-			SimpleDate checkOutDate, String targetHotel, int newResID) {
-		// TODO Auto-generated method stub
-		return null;
+			String guestID, long reservationID, String hotelName, 
+			String targetHotel, long newResID) {
+		
+		//TODO: potential error of long->int if ID is large
+		ErrorAndLogMsg m = clientProxy.transferRoom(
+				guestID, (int)reservationID, hotelName, 
+				
+				// The RoomType and checkin/out dates are not going to be checked,
+				// Just fill some non-null values
+				RoomType.SINGLE, new SimpleDate(), new SimpleDate(),
+				targetHotel, (int)newResID);
+		
+		System.out.print("TRANSFER INFO:");
+		m.print(System.out);
+		System.out.println("");
+		
+		return m.errorCode();
 	}
 
 	@Override
-	public Record[] getServiceReport(String hotelName, SimpleDate serviceDate) throws RemoteException {
-		// TODO Auto-generated method stub
-		return null;
+	public ErrorCode getServiceReport (
+			String hotelName, SimpleDate serviceDate,
+			ReportSummary summary) {
+		
+		// Temporary solution by hard-coding user name and password
+		ErrorAndLogMsg m = clientProxy.loginAsManager(hotelName, "manager", "pass");
+
+		
+		if (m.anyError()) {
+			m.print(System.out);
+			System.out.println();
+			return m.errorCode();
+		}
+		
+		Collection <Record> records = new ArrayList <Record> ();
+		
+		m = clientProxy.getServiceReport(
+				hotelName, serviceDate, records);
+		
+		if (m==null || !m.anyError()) {
+			StringBuilder sum = new StringBuilder();
+			sum.append("Service Report:\n");
+			
+			summary.totalRoomCnt = records.size();
+			
+			for (Record rec : records) {
+				sum.append(rec.toString());		
+				sum.append("\n======\n");
+			}
+			
+			summary.summary = sum.toString();
+			
+			System.out.println ("Got service report:");
+			System.out.println (summary);
+			
+			return ErrorCode.SUCCESS;
+		} else {
+			m.printMsg();
+			return m.errorCode();
+		}
+
 	}
 
 	@Override
-	public Record[] getStatusReport(String hotelName, SimpleDate date) throws RemoteException {
-		// TODO Auto-generated method stub
-		return null;
+	public ErrorCode getStatusReport (
+			String hotelName, SimpleDate date,
+			ReportSummary summary)  {
+		
+		// Temporary solution by hard-coding user name and password
+		ErrorAndLogMsg m = clientProxy.loginAsManager(hotelName, "manager", "pass");
+
+		
+		if (m.anyError()) {
+			m.print(System.out);
+			System.out.println();
+			return m.errorCode();
+		}
+		
+		Collection <Record> records = new ArrayList <Record> ();
+		
+		m = clientProxy.getStatusReport(
+				hotelName, date, records);
+		
+		if (m==null || !m.anyError()) {
+			StringBuilder sum = new StringBuilder();
+			sum.append("Status Report:\n");
+			
+			summary.totalRoomCnt = records.size();
+			
+			for (Record rec : records) {
+				sum.append(rec.toString());		
+				sum.append("\n======\n");
+			}
+			
+			summary.summary = sum.toString();
+			
+			System.out.println ("Got status report:");
+			System.out.println (summary);
+			
+			return ErrorCode.SUCCESS;
+		} else {
+			m.printMsg();
+			return m.errorCode();
+		}
 	}
 	
 	private Process[] serverProcesses = new Process[3]; // process of the three servers

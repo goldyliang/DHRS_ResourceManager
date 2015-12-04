@@ -89,31 +89,47 @@ public interface HotelServerApp {
 	
 	*/
 	
+	public static class ReportSummary {
+		public int totalRoomCnt;
+		public String summary;
+		
+		@Override
+		public String toString () {
+			return "Total Room Cound:" + totalRoomCnt + "\n" + summary;
+		}
+	}
+	
+	public static class ReserveIDHolder {
+		public long reserveID;
+	}
 		
 	// Note: it is now not conformed with RMI interface to return long by parameter
 	// this only works for CORBA
 	public ErrorCode reserveRoom (
 			String guestID, String hotelName, RoomType roomType, 
-			SimpleDate checkInDate, SimpleDate checkOutDate, int resID) throws RemoteException;
+			SimpleDate checkInDate, SimpleDate checkOutDate, long resID);
 	
 	public ErrorCode cancelRoom (
 			String guestID, String hotelName, RoomType roomType, 
-			SimpleDate checkInDate, SimpleDate checkOutDate) throws RemoteException;
+			SimpleDate checkInDate, SimpleDate checkOutDate);
 	
-	public List<Availability> checkAvailability (
+	public ErrorCode checkAvailability (
 			String guestID, String hotelName, RoomType roomType,
-			SimpleDate checkInDate, SimpleDate checkOutDate) throws RemoteException;
+			SimpleDate checkInDate, SimpleDate checkOutDate,
+			ReportSummary summary);
 	
 	public ErrorCode transferRoom (
-	        String guestID, int reservationID,
-	        String hotelName, RoomType roomType,
-	        SimpleDate checkInDate, SimpleDate checkOutDate,
-	        String targetHotel,
-	        int newResID);
+	        String guestID, long reservationID,
+	        String hotelName, String targetHotel,
+	        long newResID);
 	
-	public Record[] getServiceReport (String hotelName, SimpleDate serviceDate) throws RemoteException;
+	public ErrorCode getServiceReport (
+			String hotelName, SimpleDate serviceDate,
+			ReportSummary summary);
 	
-	public Record[] getStatusReport (String hotelName, SimpleDate date) throws RemoteException;
+	public ErrorCode getStatusReport (
+			String hotelName, SimpleDate date,
+			ReportSummary summary);
 	
 	public boolean launchApp(int serverID);
 	
