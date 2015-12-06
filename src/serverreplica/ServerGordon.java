@@ -117,7 +117,7 @@ public class ServerGordon extends ServerBase {
 	@Override
 	public ErrorCode transferRoom(
 			String guestID, long reservationID, String hotelName, 
-			String targetHotel, long newResID) {
+			String targetHotel) {
 		
 		//TODO: potential error of long->int if ID is large
 		ErrorAndLogMsg m = clientProxy.transferRoom(
@@ -126,7 +126,7 @@ public class ServerGordon extends ServerBase {
 				// The RoomType and checkin/out dates are not going to be checked,
 				// Just fill some non-null values
 				RoomType.SINGLE, new SimpleDate(), new SimpleDate(),
-				targetHotel, (int)newResID);
+				targetHotel, (int)reservationID);
 		
 		System.out.print("TRANSFER INFO:");
 		m.print(System.out);

@@ -284,8 +284,8 @@ public class ResourceManager implements PacketHandler {
 				receiver.sendRMControlMsg(myID, msgRMCtrl.encode());
 			
 				// Wait for a message coming in the queue
-				GeneralMessage requst = //queueSrvRestartMsg.take();
-						queueRMCtrlMsg.poll(TIMEOUT, TimeUnit.SECONDS);
+				GeneralMessage requst = queueRMCtrlMsg.take();
+						//queueRMCtrlMsg.poll(TIMEOUT, TimeUnit.SECONDS);
 				
 				if (requst == null) {
 					ErrorAndLogMsg.GeneralErr(ErrorCode.TIME_OUT, 
@@ -902,8 +902,7 @@ public class ResourceManager implements PacketHandler {
 			
 						
 			err = activeApp.transferRoom(
-					guestID, resID, hotelName, toHotelName, 
-					resID); // use same reservation ID
+					guestID, resID, hotelName, toHotelName); // use same reservation ID
 
 		} catch (Exception e) {
 			ErrorAndLogMsg.ExceptionErr(e, "Exception when reserver - request:" 

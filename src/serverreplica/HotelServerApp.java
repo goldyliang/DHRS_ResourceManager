@@ -120,8 +120,7 @@ public interface HotelServerApp {
 	
 	public ErrorCode transferRoom (
 	        String guestID, long reservationID,
-	        String hotelName, String targetHotel,
-	        long newResID);
+	        String hotelName, String targetHotel);
 	
 	public ErrorCode getServiceReport (
 			String hotelName, SimpleDate serviceDate,

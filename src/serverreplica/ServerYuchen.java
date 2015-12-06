@@ -77,8 +77,67 @@ public class ServerYuchen extends ServerBase {
 	@Override
 	public ErrorCode cancelRoom(
 			String guestID, String hotelName, RoomType roomType, SimpleDate checkInDate, SimpleDate checkOutDate) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		int iGuestID = Integer.valueOf(guestID);
+		String sType = convertRoomType (roomType);
+		int iCheckIn = convertDate (checkInDate);
+		int iCheckOut = convertDate(checkOutDate);
+		
+		function hotel;
+		
+		switch (hotelName) {
+		case "H1":
+			hotel = H1; break;
+		case "H2":
+			hotel = H2; break;
+		case "H3":
+			hotel = H3; break;
+		default:
+			ErrorAndLogMsg.GeneralErr(ErrorCode.HOTEL_NOT_FOUND, "Invalid hotel:" + hotelName).printMsg();
+			return ErrorCode.HOTEL_NOT_FOUND;
+		}
+				
+		String result = hotel.cancelRoom(iGuestID, hotelName, sType, iCheckIn, iCheckOut);
+		
+		System.out.println("Server return results:" + result);
+
+		if (result.indexOf("Successful")>=0)
+			return ErrorCode.SUCCESS;
+		else
+			return ErrorCode.RECORD_NOT_FOUND;
+	}
+
+	@Override
+	public ErrorCode transferRoom(
+			String guestID, long reservationID, String hotelName, 
+			String targetHotel) {
+		
+		int iGuestID = Integer.valueOf(guestID);
+		
+		function hotel;
+		
+		switch (hotelName) {
+		case "H1":
+			hotel = H1; break;
+		case "H2":
+			hotel = H2; break;
+		case "H3":
+			hotel = H3; break;
+		default:
+			ErrorAndLogMsg.GeneralErr(ErrorCode.HOTEL_NOT_FOUND, "Invalid hotel:" + hotelName).printMsg();
+			return ErrorCode.HOTEL_NOT_FOUND;
+		}
+				
+		//TODO: potential error of long->int
+		//Use the original reservationID and omit the new one 
+		String result = hotel.transferReservation(iGuestID, (int)reservationID, hotelName, targetHotel);
+		
+		System.out.println("Server return results:" + result);
+
+		if (result.indexOf("Successful")>=0)
+			return ErrorCode.SUCCESS;
+		else
+			return ErrorCode.ROOM_UNAVAILABLE;
 	}
 
 	@Override
@@ -86,18 +145,51 @@ public class ServerYuchen extends ServerBase {
 			String guestID, String hotelName, RoomType roomType,
 			SimpleDate checkInDate, SimpleDate checkOutDate,
 			ReportSummary summary) {
-		// TODO Auto-generated method stub
-		return null;
+		
+		int iGuestID = Integer.valueOf(guestID);
+		String sType = convertRoomType (roomType);
+		int iCheckIn = convertDate (checkInDate);
+		int iCheckOut = convertDate(checkOutDate);
+		
+		
+		function hotel;
+		
+		switch (hotelName) {
+		case "H1":
+			hotel = H1; break;
+		case "H2":
+			hotel = H2; break;
+		case "H3":
+			hotel = H3; break;
+		default:
+			ErrorAndLogMsg.GeneralErr(ErrorCode.HOTEL_NOT_FOUND, "Invalid hotel:" + hotelName).printMsg();
+			return ErrorCode.HOTEL_NOT_FOUND;
+		}
+		
+		String res = hotel.checkAvailability(iGuestID, hotelName, sType, iCheckIn, iCheckOut);
+		summary.summary = res;
+		
+		try {
+			// The format of summary is like
+			// return "Available "+Available+" Rent: "+rent;
+			// grab room counts from it
+			String k = "Available";
+			int i = res.indexOf(k) + k.length();
+			int j = res.indexOf("Rent:");
+			String cnt = res.substring(i, j);
+			summary.totalRoomCnt = Integer.valueOf(cnt);
+			
+			return ErrorCode.SUCCESS;
+			
+		} catch (Exception e) {
+			ErrorAndLogMsg.ExceptionErr(e, "Wrong in check.");
+			
+			return ErrorCode.INVALID_REQUEST;
+		}
+		
 	}
-
-	@Override
-	public ErrorCode transferRoom(
-			String guestID, long reservationID, String hotelName, 
-			String targetHotel, long newResID) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
+	
+	
 	@Override
 	public ErrorCode getServiceReport (
 			String hotelName, SimpleDate serviceDate,
