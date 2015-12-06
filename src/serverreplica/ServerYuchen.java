@@ -14,7 +14,7 @@ import DHRS_Corba.functionHelper;
 //import DHRS_FE.functionHelper;
 import HotelServerInterface.ErrorAndLogMsg;
 import HotelServerInterface.ErrorAndLogMsg.ErrorCode;
-
+import HotelServerInterface.IHotelServer.Record;
 import HotelServerInterface.IHotelServer.RoomType;
 import miscutil.SimpleDate;
 
@@ -191,6 +191,18 @@ public class ServerYuchen extends ServerBase {
 		}
 		
 		return true;
+	}
+
+	@Override
+	public boolean startIterateSnapShotRecords() {
+		ErrorAndLogMsg.GeneralErr(ErrorCode.INVALID_REQUEST, "Bulk Sync From not supported.");
+		return false;
+	}
+
+	@Override
+	public Record getNextSnapShotRecord() {
+		ErrorAndLogMsg.GeneralErr(ErrorCode.INVALID_REQUEST, "Bulk Sync From not supported.");
+		return null;
 	}
 
 }

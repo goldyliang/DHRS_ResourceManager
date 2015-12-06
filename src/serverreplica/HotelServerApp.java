@@ -137,4 +137,8 @@ public interface HotelServerApp {
 	
 	public boolean killApp();
 	
+	public boolean startIterateSnapShotRecords();
+	
+	public Record getNextSnapShotRecord();
+	
 }

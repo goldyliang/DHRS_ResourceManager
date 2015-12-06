@@ -358,4 +358,16 @@ public class ServerGordon extends ServerBase {
 		return true;
 	}
 
+	@Override
+	public boolean startIterateSnapShotRecords() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public Record getNextSnapShotRecord() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }

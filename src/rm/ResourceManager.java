@@ -1,9 +1,14 @@
 package rm;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.InetSocketAddress;
-import java.text.ParseException;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -12,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import HotelServerInterface.ErrorAndLogMsg;
 import HotelServerInterface.ErrorAndLogMsg.ErrorCode;
 import HotelServerInterface.ErrorAndLogMsg.MsgType;
+import HotelServerInterface.IHotelServer.Record;
 import HotelServerInterface.IHotelServer.RoomType;
 import message.GeneralMessage;
 import message.GeneralMessage.MessageType;
@@ -107,9 +113,10 @@ public class ResourceManager implements PacketHandler {
 		
 		activeRMs.add(this);
 		
-		if (bulkSyncFrom >=0) {
-			if (!bulkSync (bulkSyncFrom)) return false;
-		}
+		// TODO: debug and remove
+		/*if (bulkSyncFrom >=0) {
+			if (!doBulkSyncFrom (bulkSyncFrom)) return false;
+		} */
 		
 		GeneralMessage msgAddServer =
 				new GeneralMessage (MessageType.ADD_SERVER);
@@ -163,6 +170,9 @@ public class ResourceManager implements PacketHandler {
 		case PAUSE:
 		//case RESUME:
 			return handleRMControlMsg (msgRequest).encode();
+			
+		case SYNC_REQUEST:
+			return handleSyncRequest(msgRequest).encode();
 		
 		default:
 			ErrorAndLogMsg.GeneralErr(ErrorCode.INVALID_REQUEST, 
@@ -173,6 +183,25 @@ public class ResourceManager implements PacketHandler {
 		return null;
 	}
 	
+
+	private GeneralMessage handleSyncRequest(GeneralMessage msgRequest) {
+		
+		// Print out what ever RM Control message received
+		System.out.println ("Received SYNC_REQUEST: \n" + msgRequest.encode());
+		
+		// Get information
+		int toServerID = Integer.valueOf(msgRequest.getValue(PropertyName.SYNC_TO_SRV_ID));
+		String toHost = msgRequest.getValue(PropertyName.SYNC_TO_SRV_ADDR);
+		int toPort = Integer.valueOf(msgRequest.getValue(PropertyName.SYNC_TO_SRV_PORT));
+		
+		// Start a thread for the sync
+		doBulkSyncTo(toServerID, new InetSocketAddress (toHost, toPort));
+
+		// Build an ack
+		GeneralMessage rsp = new GeneralMessage (MessageType.RESPOND);
+		
+		return rsp;
+	}
 
 	private int getNextServerID () {
 		switch (myID) {
@@ -283,7 +312,256 @@ public class ResourceManager implements PacketHandler {
 	// do a bulkSync to update local application, from another server with fromServerID
 	// a PAUSE will be sent to Sequencer at a proper time to freeze the requests
 	// to guarantee a complete sync
-	private boolean bulkSync (int fromServerID) {
+	private boolean doBulkSyncFrom (int fromServerID) {
+		
+		
+		class SyncReceiver {
+			
+			private Socket sock;
+			
+			BufferedReader in;
+			
+			public SyncReceiver (Socket sock) throws IOException {
+				this.sock = sock;
+				in = new BufferedReader(
+				        new InputStreamReader(sock.getInputStream()));
+			}
+			
+			public void close () throws IOException {
+				in.close();
+				sock.close();
+			}
+			
+			// Receive from receiveSocket line by line
+			// Until a complete GeneralMessage is received
+			GeneralMessage receiveSyncMessage () throws IOException {
+								
+				// Read the first line as message Type
+				String strType = in.readLine();
+				MessageType type = MessageType.valueOf(strType);
+				GeneralMessage msg = new GeneralMessage (type);
+						
+				// Read all property lines
+				while (true) {
+					String line = in.readLine();
+					int i;
+					if ( (i=line.indexOf(":")) > 0) {
+						String property = line.substring(0, i);
+						String value = line.substring(i+1);
+						msg.setValue(PropertyName.valueOf(property), value);
+					} else
+						break;
+				}
+				
+				// Have read a line without ":", suppose to be a breaker line
+				
+				return msg;				
+			}
+		};
+	
+		ServerSocket serverSocket = null;
+		Socket receiveSocket = null;
+		InetSocketAddress serverSockAddr;
+		SyncReceiver receiver = null;
+		
+		try {
+			//-------------------
+			//Open a TCP port for receiving sync messages.
+			//Start the port for listening
+			serverSocket = new ServerSocket(); // System allocate port
+			serverSockAddr = (InetSocketAddress)serverSocket.getLocalSocketAddress();
+			
+			//-------------------
+			//Send a SYNC_REQUEST to Sequencer, with fromServerID, toServerID (myself), and TCP listening address
+			GeneralMessage msgSyncRequest = new GeneralMessage (MessageType.SYNC_REQUEST); 
+			msgSyncRequest.setValue(PropertyName.SYNC_FROM_SRV_ID, String.valueOf(fromServerID));
+			msgSyncRequest.setValue(PropertyName.SYNC_TO_SRV_ID, String.valueOf(myID));
+			msgSyncRequest.setValue(PropertyName.SYNC_TO_SRV_ADDR, serverSockAddr.getHostString());
+			msgSyncRequest.setValue(PropertyName.SYNC_TO_SRV_PORT, String.valueOf(serverSockAddr.getPort()));
+			this.initiateRMControlMessage(msgSyncRequest);
+			
+			//-------------------
+			//Validate and accept a TCP connection from another server
+			receiveSocket = serverSocket.accept();
+			receiver = new SyncReceiver (receiveSocket);
+			
+			//TODO: some validation might be required
+			
+			//-------------------
+			//Receive sync messages and invoke CORBA function correspondingly (Reserver, or cancel)
+			boolean completed = false;
+			while (!completed) {
+				GeneralMessage msg = receiver.receiveSyncMessage();
+				
+				if (msg==null) {
+					ErrorAndLogMsg.GeneralErr(ErrorCode.INVALID_REQUEST, 
+							"Incomplete sync");
+					break; // incomplete
+				}
+				else {
+					switch (msg.getMessageType()) {
+					case RESERVE:
+						this.handleReserve(0, msg); // use this reservation ID from property
+						break;
+					case CANCEL:
+						this.handleCancel(msg);
+						break;
+					case SYNC_COMPLETE:
+						// all done
+						completed = true;
+						break;
+					default:
+						//Shall not happen
+						ErrorAndLogMsg.GeneralErr(ErrorCode.INVALID_REQUEST, 
+								"Invalid message received during sync:" + msg.encode());
+					}
+				}
+			}
+			
+			if (!completed) {
+				receiver.close();
+				serverSocket.close();
+				return false;			
+			}
+			
+			//-------------------
+			//Upon receive of "Complete", now completed
+			
+			receiver.close();
+			serverSocket.close();
+			
+			return true;
+		} catch (Exception e) {
+			ErrorAndLogMsg.ExceptionErr(e, "Exception when doing bulkSync From").printMsg();
+			
+			try {
+				if (receiver!=null) receiver.close();
+				if (serverSocket!=null) serverSocket.close();
+			} catch (Exception e1) {}
+			
+			return false;
+		}
+	}
+	
+	Object bulkSyncLock = new Object();
+	
+	// Boolean flag that the bulk sync to another server has started
+	boolean bulkSyncOngoing = false;
+	
+	// The list of requests message to be sent, 
+	// which are received after the first round sync started.
+	private List<GeneralMessage> toSyncList = new ArrayList<GeneralMessage>();
+
+	
+	// Do a bulk sync towards another server with serverID=toSeverID, TCP address = toSocketAddr
+	private boolean doBulkSyncTo (final int toServerID, final InetSocketAddress toSocketAddr) {
+		
+		class SyncMessageBuilder {
+			
+			private GeneralMessage buildCommon (Record r) {
+				GeneralMessage msg = new GeneralMessage (MessageType.RESERVE);
+				
+				msg.setValue(PropertyName.GUESTID, r.guestID);
+				msg.setValue(PropertyName.HOTEL, r.shortName);
+				msg.setValue(PropertyName.ROOMTYPE, r.roomType.toString());
+				msg.setValue(PropertyName.CHECKINDATE, r.checkInDate.toString());
+				msg.setValue(PropertyName.CHECKOUTDATE, r.checkOutDate.toString());
+				
+				return msg;
+			}
+			
+			GeneralMessage buildSyncReserve (Record r) {
+
+				GeneralMessage msg = buildCommon(r);
+				msg.setValue(PropertyName.RESID, String.valueOf(r.resID));
+				return msg;
+			}
+			
+			GeneralMessage buildSyncCancel (Record r) {
+				return buildCommon (r);
+			}
+		}
+		//Start a new thread for all below steps
+		new Thread () {
+			@Override
+			public void run() {
+				
+				Socket sendSocket = null;
+				PrintWriter out = null;
+
+				try {
+					HotelServerApp app = (ResourceManager.this).activeApp;
+					
+					//-------------------
+					//Open a TCP socket and connect to toSocketAddr
+					sendSocket = new Socket ();
+					sendSocket.connect(toSocketAddr);
+					
+					out = new PrintWriter(sendSocket.getOutputStream(), true);
+	
+					//-------------------
+					//Get a frozen local snapshot, and mark the flag of bulkSyncOngoing
+					//From now on, all received Reserve/Cancel will be also put into a toSyncList
+					synchronized (bulkSyncLock) {
+						if (activeApp.startIterateSnapShotRecords()) {
+							ErrorAndLogMsg.GeneralErr(ErrorCode.INTERNAL_ERROR, "Snap shot creation failure.");
+							return;
+						}
+						
+						bulkSyncOngoing = true;
+					}
+					
+					//-------------------
+					//Send reserver messages for the records in the frozen snapshot
+					SyncMessageBuilder builder = new SyncMessageBuilder ();
+					
+					Record r;
+					while ( (r = activeApp.getNextSnapShotRecord()) != null) {
+						
+						GeneralMessage msg = builder.buildSyncReserve(r);
+						
+						out.print(msg.encode());
+						out.println("--"); // message separator
+						
+					}
+					
+					//-------------------
+					//Send a PAUSE message to Sequencer to pause any further opertions.
+					//Wait for a respons for PAUSE
+					// TODO
+					
+					
+					//-------------------
+					//Iterate toSyncList and send Reserver/Cancel to the other server
+					// TODO
+					
+					//-------------------
+					//Send a "Complete" to the other server
+					GeneralMessage msg = new GeneralMessage (MessageType.SYNC_COMPLETE);
+					out.print(msg.encode());
+					out.println("--");
+					
+					
+					//-------------------
+					//All done. Clear the toSyncList
+					// TODO
+					
+					out.close();
+					sendSocket.close();
+					
+				} catch (Exception e) {
+					ErrorAndLogMsg.ExceptionErr(e, "Exception when doing bulk sync to.").printMsg();
+					
+					try {
+						if (out!=null) out.close();
+						if (sendSocket!=null) sendSocket.close();
+					} catch (Exception e1) {}
+					
+					return;
+				}
+			}
+		}.start();
+
 		return true;
 	}
 	
@@ -529,7 +807,7 @@ public class ResourceManager implements PacketHandler {
 	}
 
 	
-	private GeneralMessage handleReserve(long seqNum, GeneralMessage request) {
+	private GeneralMessage handleReserve(long lresID, GeneralMessage request) {
 				
 		GeneralMessage reply = new GeneralMessage (MessageType.RESPOND);
 		
@@ -537,7 +815,8 @@ public class ResourceManager implements PacketHandler {
 		
 		ErrorCode err;
 		
-		int resID = (int) seqNum;
+		// TODO , might have problem from long -> int
+		int resID = (int) lresID;
 		
 		try {
 			String guestID=request.getValue(PropertyName.GUESTID);
@@ -545,6 +824,10 @@ public class ResourceManager implements PacketHandler {
 			RoomType roomType = getRoomType (request);
 			SimpleDate checkInDate = getDate (request, PropertyName.CHECKINDATE);
 			SimpleDate checkOutDate = getDate (request, PropertyName.CHECKOUTDATE);
+			
+			if (resID <= 0)
+				//Use the reserveationID from property  (this is for the sync purpose)
+				resID = Integer.valueOf(request.getValue(PropertyName.RESID));
 						
 			err = activeApp.reserveRoom(
 					guestID, hotelName, roomType, checkInDate, checkOutDate, resID);
