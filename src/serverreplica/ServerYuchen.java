@@ -4,20 +4,19 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.rmi.RemoteException;
-import java.util.List;
+
 
 import org.omg.CORBA.ORB;
 
-import DHRS_FE.function;
-import DHRS_FE.functionHelper;
+import DHRS_Corba.function;
+import DHRS_Corba.functionHelper;
+//import DHRS_FE.function;
+//import DHRS_FE.functionHelper;
 import HotelServerInterface.ErrorAndLogMsg;
 import HotelServerInterface.ErrorAndLogMsg.ErrorCode;
-import HotelServerInterface.IHotelServer.Availability;
-import HotelServerInterface.IHotelServer.Record;
+
 import HotelServerInterface.IHotelServer.RoomType;
 import miscutil.SimpleDate;
-import serverreplica.HotelServerApp.ReportSummary;
 
 
 public class ServerYuchen extends ServerBase {
@@ -64,8 +63,8 @@ public class ServerYuchen extends ServerBase {
 			return ErrorCode.HOTEL_NOT_FOUND;
 		}
 				
-		// TODO: shall pass the resID in
-		String result = hotel.reserveRoom(iGuestID, hotelName, sType, iCheckIn, iCheckOut);
+		//TODO: potential error of long->int
+		String result = hotel.reserveRoom(iGuestID, hotelName, sType, iCheckIn, iCheckOut, (int)resID);
 		
 		System.out.println("Server return results:" + result);
 
