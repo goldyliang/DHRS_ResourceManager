@@ -580,6 +580,7 @@ public class ResourceManager implements PacketHandler {
 		@Override public void run () {
 			// Clear the message queue first
 		
+			System.out.println ("Restarting HotelServer Apps with class" + newAppClass);
 			
 			queueRMCtrlMsg.clear();
 		
