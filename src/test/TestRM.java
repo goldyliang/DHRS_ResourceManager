@@ -136,7 +136,44 @@ public class TestRM {
 	}
 	
 	@Test
-	public void testBulkSync () {
+	public void testBulkSync (String class1, String class2) throws IOException {
+		
+		String [] args1 = {
+				class1, // app class
+				"1",  // server ID
+				"0", // sync from
+				"localhost", // FE address
+				"4000",  // FE port
+				"HA"
+		};
+		
+		// start three replications
+		runResourceMain(args1);
+		verifyServerAdd (1);
+
+		// wait for some time
+		try {
+			Thread.sleep(3000);
+		} catch (InterruptedException e) {
+
+		}
+
+		// now we reserve one first
+		verifyReserve ("1234","H1","DOUBLE","20151210","20151220");
+
+		
+		String [] args2 = {
+				class2, // app class
+				"2",  // server ID
+				"1", // sync from
+				"localhost", // FE address
+				"4000",  // FE port
+				"HA"
+		};
+		
+		runResourceMain(args2);
+		verifyServerAdd (2);
+		
 		
 	}	
 	
@@ -304,9 +341,10 @@ public class TestRM {
 		String [] args1 = {
 				class1, // app class
 				"1",  // server ID
-				"2000", // localport
+				"0", // sync from
 				"localhost", // FE address
-				"4000"  // FE port
+				"4000",  // FE port
+				"HA"
 		};
 		
 		// start three replications
@@ -317,10 +355,12 @@ public class TestRM {
 		String [] args2 = {
 				class2, // app class
 				"2",  // server ID
-				"2001", // localport
+				"0", // sync from
 				"localhost", // FE address
-				"4000"  // FE port
+				"4000",  // FE port
+				"HA"
 		};
+		
 		runResourceMain(args2);
 		verifyServerAdd (2);
 
@@ -328,9 +368,10 @@ public class TestRM {
 		String [] args3 = {
 				class3, // app class
 				"3",  // server ID
-				"2002", // localport
+				"0", // sync from
 				"localhost", // FE address
-				"4000"  // FE port
+				"4000",  // FE port
+				"HA"
 		};
 		runResourceMain(args3);
 		verifyServerAdd (3);
@@ -345,7 +386,7 @@ public class TestRM {
 
 		
 		// now we reserve one first
-		verifyReserve ("1234","H1","DOUBLE","20151205","20151210");
+		verifyReserve ("1234","H1","DOUBLE","20151210","20151220");
 		
 		GeneralMessage suspectRpt = new GeneralMessage (MessageType.REPORT_SUSPECTED_RESPOND);
 		suspectRpt.setValue(PropertyName.SERVERID, "1");
@@ -425,7 +466,7 @@ public class TestRM {
 		//System.out.println("Verified broadcasted RESUME");
 	}
 	
-	@Test
+	//@Test
 	public void testAppRestartDueToNoRsp_AllGordon() throws IOException, InterruptedException {
 		testAppRestartDueToNoRsp (
 				"serverreplica.ServerGordon",

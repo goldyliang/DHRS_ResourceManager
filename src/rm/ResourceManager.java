@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -113,10 +114,9 @@ public class ResourceManager implements PacketHandler {
 		
 		activeRMs.add(this);
 		
-		// TODO: debug and remove
-		/*if (bulkSyncFrom >=0) {
+		if (bulkSyncFrom > 0) {
 			if (!doBulkSyncFrom (bulkSyncFrom)) return false;
-		} */
+		}
 		
 		GeneralMessage msgAddServer =
 				new GeneralMessage (MessageType.ADD_SERVER);
@@ -193,9 +193,24 @@ public class ResourceManager implements PacketHandler {
 		int toServerID = Integer.valueOf(msgRequest.getValue(PropertyName.SYNC_TO_SRV_ID));
 		String toHost = msgRequest.getValue(PropertyName.SYNC_TO_SRV_ADDR);
 		int toPort = Integer.valueOf(msgRequest.getValue(PropertyName.SYNC_TO_SRV_PORT));
+		int fromServerID = Integer.valueOf(msgRequest.getValue(PropertyName.SYNC_FROM_SRV_ID));
 		
-		// Start a thread for the sync
-		doBulkSyncTo(toServerID, new InetSocketAddress (toHost, toPort));
+		if (myID == fromServerID) {
+			// Start a thread for the sync
+			doBulkSyncTo(toServerID, new InetSocketAddress (toHost, toPort));
+		} else {
+			// Push the request message to queue
+			if (!queueRMCtrlMsg.offer (msgRequest)) {
+				
+				// If it is full, there shall be stail control message.
+				// Remove one and try again
+				ErrorAndLogMsg.GeneralErr(
+						ErrorCode.INTERNAL_ERROR, "RMCtrlQueue full").printMsg();
+				queueRMCtrlMsg.poll();
+				queueRMCtrlMsg.offer (msgRequest);
+				//throw new RuntimeException ("Queue push error : " + type);
+			}
+		}
 
 		// Build an ack
 		GeneralMessage rsp = new GeneralMessage (MessageType.RESPOND);
@@ -368,16 +383,17 @@ public class ResourceManager implements PacketHandler {
 			//-------------------
 			//Open a TCP port for receiving sync messages.
 			//Start the port for listening
-			serverSocket = new ServerSocket(); // System allocate port
-			serverSockAddr = (InetSocketAddress)serverSocket.getLocalSocketAddress();
+			serverSocket = new ServerSocket();
+			serverSocket.bind(null);  // auto allocate port
+			InetSocketAddress addr = (InetSocketAddress) serverSocket.getLocalSocketAddress();
 			
 			//-------------------
 			//Send a SYNC_REQUEST to Sequencer, with fromServerID, toServerID (myself), and TCP listening address
 			GeneralMessage msgSyncRequest = new GeneralMessage (MessageType.SYNC_REQUEST); 
 			msgSyncRequest.setValue(PropertyName.SYNC_FROM_SRV_ID, String.valueOf(fromServerID));
 			msgSyncRequest.setValue(PropertyName.SYNC_TO_SRV_ID, String.valueOf(myID));
-			msgSyncRequest.setValue(PropertyName.SYNC_TO_SRV_ADDR, serverSockAddr.getHostString());
-			msgSyncRequest.setValue(PropertyName.SYNC_TO_SRV_PORT, String.valueOf(serverSockAddr.getPort()));
+			msgSyncRequest.setValue(PropertyName.SYNC_TO_SRV_ADDR, InetAddress.getLocalHost().getHostAddress() ); // TODO: how does it work for multiple network connections?
+			msgSyncRequest.setValue(PropertyName.SYNC_TO_SRV_PORT, String.valueOf(addr.getPort()));
 			this.initiateRMControlMessage(msgSyncRequest);
 			
 			//-------------------
@@ -401,6 +417,7 @@ public class ResourceManager implements PacketHandler {
 				else {
 					switch (msg.getMessageType()) {
 					case RESERVE:
+						System.out.println ("Sync RESERVE received for resID:" + msg.getValue(PropertyName.RESID));
 						this.handleReserve(0, msg); // use this reservation ID from property
 						break;
 					case CANCEL:
@@ -503,7 +520,7 @@ public class ResourceManager implements PacketHandler {
 					//Get a frozen local snapshot, and mark the flag of bulkSyncOngoing
 					//From now on, all received Reserve/Cancel will be also put into a toSyncList
 					synchronized (bulkSyncLock) {
-						if (activeApp.startIterateSnapShotRecords()) {
+						if (! activeApp.startIterateSnapShotRecords()) {
 							ErrorAndLogMsg.GeneralErr(ErrorCode.INTERNAL_ERROR, "Snap shot creation failure.");
 							return;
 						}
@@ -521,6 +538,9 @@ public class ResourceManager implements PacketHandler {
 						GeneralMessage msg = builder.buildSyncReserve(r);
 						
 						out.print(msg.encode());
+						
+						System.out.println("Sync sent for resID:" + r.resID);
+												
 						out.println("--"); // message separator
 						
 					}

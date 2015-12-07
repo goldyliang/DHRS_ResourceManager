@@ -8,6 +8,7 @@ import java.io.PrintStream;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import Client.HotelClient;
@@ -293,10 +294,6 @@ public class ServerGordon extends ServerBase {
 			
 			System.out.println("Gordon processes launched...");
 			
-			//Give some time for the servers to register to name service
-			//Thread.sleep(5000);
-				
-			
 			String regHost = "localhost";
 			int regPort = 1050;
 			
@@ -305,6 +302,9 @@ public class ServerGordon extends ServerBase {
 			clientProxy = new HotelClient(serverID);
 			
 			ErrorAndLogMsg m = clientProxy.Initialize(regHost, regPort);
+			
+			//Give some time for the servers to register to name service
+			Thread.sleep(3000);
 			
 			return (m==null || !m.anyError());
 			
@@ -358,16 +358,34 @@ public class ServerGordon extends ServerBase {
 		return true;
 	}
 
+	private Collection <Record> recSnapshot = null;
+	private Iterator <Record> iterSnapshot = null;
+	
 	@Override
 	public boolean startIterateSnapShotRecords() {
+		
 		// TODO Auto-generated method stub
-		return false;
+		Collection <Record> records = new ArrayList <Record> ();
+		ErrorAndLogMsg m = clientProxy.getRecordSnapshot(records);
+		
+		if (m!=null && m.anyError())
+			return false;
+		else {
+			iterSnapshot = records.iterator();
+			return true;
+		}
 	}
 
 	@Override
 	public Record getNextSnapShotRecord() {
 		// TODO Auto-generated method stub
-		return null;
+		if (iterSnapshot == null)
+			return null;
+		
+		if (iterSnapshot.hasNext())
+			return iterSnapshot.next();
+		else
+			return null;
 	}
 
 }
