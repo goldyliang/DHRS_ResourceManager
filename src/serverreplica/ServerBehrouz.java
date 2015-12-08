@@ -19,7 +19,7 @@ import HotelServerInterface.IHotelServer.RoomType;
 import miscutil.SimpleDate;
 
 
-public class ServerYuchen extends ServerBase {
+public class ServerBehrouz extends ServerBase {
 
 	// CORBA remote objects
 	function H1;
@@ -101,7 +101,7 @@ public class ServerYuchen extends ServerBase {
 		
 		System.out.println("Server return results:" + result);
 
-		if (result.toLowerCase().indexOf("successful")>=0)
+		if (result.indexOf("Successful")>=0)
 			return ErrorCode.SUCCESS;
 		else
 			return ErrorCode.RECORD_NOT_FOUND;
@@ -134,13 +134,15 @@ public class ServerYuchen extends ServerBase {
 		
 		System.out.println("Server return results:" + result);
 
-		if (result.toLowerCase().indexOf("successful")>=0)
+		if (result.indexOf("Successful")>=0)
 			return ErrorCode.SUCCESS;
 		else
 			return ErrorCode.ROOM_UNAVAILABLE;
 	}
 
-	private ErrorCode checkAvailabilitOneHotel (String guestID, String hotelName, RoomType roomType,
+	@Override
+	public ErrorCode checkAvailability(
+			String guestID, String hotelName, RoomType roomType,
 			SimpleDate checkInDate, SimpleDate checkOutDate,
 			ReportSummary summary) {
 		
@@ -165,51 +167,25 @@ public class ServerYuchen extends ServerBase {
 		}
 		
 		String res = hotel.checkAvailability(iGuestID, hotelName, sType, iCheckIn, iCheckOut);
-		//summary.summary = res;
+		summary.summary = res;
 		
 		try {
 			// The format of summary is like
 			// return "Available "+Available+" Rent: "+rent;
 			// grab room counts from it
-			
-			String chk = res.toLowerCase();
-			String k = "available";
-			int i = chk.indexOf(k) + k.length();
-			int j = chk.indexOf("rent:");
-			String cnt = chk.substring(i, j).trim();
-			summary.totalRoomCnt += Integer.valueOf(cnt);
-			
-			summary.summary += "Hotel " + hotelName + ": " + res + "\n";
+			String k = "Available";
+			int i = res.indexOf(k) + k.length();
+			int j = res.indexOf("Rent:");
+			String cnt = res.substring(i, j);
+			summary.totalRoomCnt = Integer.valueOf(cnt);
 			
 			return ErrorCode.SUCCESS;
 			
 		} catch (Exception e) {
-			ErrorAndLogMsg.ExceptionErr(e, "Wrong in check.").printMsg();
+			ErrorAndLogMsg.ExceptionErr(e, "Wrong in check.");
 			
 			return ErrorCode.INVALID_REQUEST;
 		}
-	}
-	
-	@Override
-	public ErrorCode checkAvailability(
-			String guestID, String hotelName, RoomType roomType,
-			SimpleDate checkInDate, SimpleDate checkOutDate,
-			ReportSummary summary) {
-		
-		summary.totalRoomCnt = 0;
-		summary.summary = "";
-
-		checkAvailabilitOneHotel (guestID, "H1", roomType, 
-				checkInDate, checkOutDate, summary);
-		
-		checkAvailabilitOneHotel (guestID, "H2", roomType, 
-				checkInDate, checkOutDate, summary);
-		
-		checkAvailabilitOneHotel (guestID, "H3", roomType, 
-				checkInDate, checkOutDate, summary);
-		
-		return ErrorCode.SUCCESS;	
-		
 		
 	}
 	
@@ -217,95 +193,16 @@ public class ServerYuchen extends ServerBase {
 	@Override
 	public ErrorCode getServiceReport (
 			String hotelName, SimpleDate serviceDate,
-			ReportSummary summary) {	
-		
-		int iServiceDate = convertDate(serviceDate);
-		
-		
-		function hotel;
-		
-		switch (hotelName) {
-		case "H1":
-			hotel = H1; break;
-		case "H2":
-			hotel = H2; break;
-		case "H3":
-			hotel = H3; break;
-		default:
-			ErrorAndLogMsg.GeneralErr(ErrorCode.HOTEL_NOT_FOUND, "Invalid hotel:" + hotelName).printMsg();
-			return ErrorCode.HOTEL_NOT_FOUND;
-		}
-		
-		String res = hotel.serviceReport(hotelName, iServiceDate);
-		
-		try {
-			// The format of summary is like
-			// 		return "Total rooms: " + cnt + ". " + serviceReport;
-
-			
-			String chk = res.toLowerCase();
-			String k = "total rooms:";
-			int i = chk.indexOf(k) + k.length();
-			int j = chk.indexOf(".", i+1);
-			String cnt = chk.substring(i, j).trim();
-			summary.totalRoomCnt += Integer.valueOf(cnt);
-			
-			summary.summary = res + "\n";
-			
-			return ErrorCode.SUCCESS;
-			
-		} catch (Exception e) {
-			ErrorAndLogMsg.ExceptionErr(e, "Wrong in check.").printMsg();
-			
-			return ErrorCode.INVALID_REQUEST;
-		}
+			ReportSummary summary) {		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
 	public ErrorCode getStatusReport (
 			String hotelName, SimpleDate date,
 			ReportSummary summary)  {
-		
-		int iDate = convertDate(date);
-		
-		
-		function hotel;
-		
-		switch (hotelName) {
-		case "H1":
-			hotel = H1; break;
-		case "H2":
-			hotel = H2; break;
-		case "H3":
-			hotel = H3; break;
-		default:
-			ErrorAndLogMsg.GeneralErr(ErrorCode.HOTEL_NOT_FOUND, "Invalid hotel:" + hotelName).printMsg();
-			return ErrorCode.HOTEL_NOT_FOUND;
-		}
-		
-		String res = hotel.printSatus(hotelName, iDate);
-		
-		try {
-			// The format of summary is like
-			// 		return "Total rooms: " + cnt + ". " + serviceReport;
-
-			
-			String chk = res.toLowerCase();
-			String k = "total rooms:";
-			int i = chk.indexOf(k) + k.length();
-			int j = chk.indexOf(".", i+1);
-			String cnt = chk.substring(i, j).trim();
-			summary.totalRoomCnt += Integer.valueOf(cnt);
-			
-			summary.summary = res + "\n";
-			
-			return ErrorCode.SUCCESS;
-			
-		} catch (Exception e) {
-			ErrorAndLogMsg.ExceptionErr(e, "Wrong in check.").printMsg();
-			
-			return ErrorCode.INVALID_REQUEST;
-		}
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 	private Process serverProcesses; // process of the three servers
@@ -313,7 +210,7 @@ public class ServerYuchen extends ServerBase {
 	
 	private static final String LAUNCH_CMD = "xterm -T 'YuchenHotelServer' -e java -classpath bin/ DHRS_Corba.DHRS_Server ";
 	
-	private static final String LAUNCH_FOLDER = "../CORBA_DHRS/";
+	private static final String LAUNCH_FOLDER = "/home/gordon/workspace/DHRS-Yuchen/";
 	
 	@Override
 	public boolean launchApp(int serverID) {

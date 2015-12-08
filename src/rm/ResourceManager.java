@@ -285,7 +285,7 @@ public class ResourceManager implements PacketHandler {
 	private boolean initiateRMControlMessage (GeneralMessage msgRMCtrl) {
 		
 		final int MAX_ATTEMPTS = 1;
-		final int TIMEOUT = 3;
+		final int TIMEOUT = 5;
 		
 		int attempts = 0;
 		
@@ -299,8 +299,8 @@ public class ResourceManager implements PacketHandler {
 				receiver.sendRMControlMsg(myID, msgRMCtrl.encode());
 			
 				// Wait for a message coming in the queue
-				GeneralMessage requst = queueRMCtrlMsg.take();
-						//queueRMCtrlMsg.poll(TIMEOUT, TimeUnit.SECONDS);
+				GeneralMessage requst = //queueRMCtrlMsg.take();
+						queueRMCtrlMsg.poll(TIMEOUT, TimeUnit.SECONDS);
 				
 				if (requst == null) {
 					ErrorAndLogMsg.GeneralErr(ErrorCode.TIME_OUT, 
